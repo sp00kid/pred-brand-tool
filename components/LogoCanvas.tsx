@@ -16,7 +16,7 @@ interface LogoCanvasProps {
 }
 
 export interface LogoCanvasHandle {
-  exportPng: () => string | null;
+  exportImage: (format: 'png' | 'jpeg', quality?: number) => string | null;
   resetFraming: () => void;
   zoomTo: (level: number) => void;
   getPreview: () => string | null;
@@ -343,14 +343,15 @@ const LogoCanvas = forwardRef<LogoCanvasHandle, LogoCanvasProps>(
 
     // Export at original resolution by inverting the display scale
     useImperativeHandle(ref, () => ({
-      exportPng: () => {
+      exportImage: (format: 'png' | 'jpeg', quality?: number) => {
         const canvas = fabricRef.current;
         if (!canvas || !originalDimsRef.current.width) return null;
 
         const multiplier = 1 / displayScaleRef.current;
 
         const dataUrl = canvas.toDataURL({
-          format: 'png',
+          format,
+          quality: quality ?? 1,
           multiplier,
           width: canvas.getWidth(),
           height: canvas.getHeight(),
@@ -422,7 +423,7 @@ const LogoCanvas = forwardRef<LogoCanvasHandle, LogoCanvasProps>(
 
         return canvas.toDataURL({
           format: 'png',
-          multiplier: 1,  // display-res only — full-res export uses exportPng()
+          multiplier: 1,  // display-res only — full-res export uses exportImage()
           width: canvas.getWidth(),
           height: canvas.getHeight(),
         });

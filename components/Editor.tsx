@@ -16,6 +16,8 @@ export default function Editor() {
   const [logoVariant, setLogoVariant] = useState<LogoVariant>(logoVariants[0]);
   const [imageInfo, setImageInfo] = useState<ImageInfo | null>(null);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [exportFormat, setExportFormat] = useState<'png' | 'jpeg'>('png');
   const [zoomLevel, setZoomLevel] = useState(1);
   const [cropRatio, setCropRatio] = useState<number | null>(null);
   const [cropId, setCropId] = useState('original');
@@ -40,15 +42,32 @@ export default function Editor() {
   }, []);
 
   const handleExport = useCallback(() => {
-    const dataUrl = canvasRef.current?.exportPng();
+    const quality = exportFormat === 'jpeg' ? 0.85 : undefined;
+    const dataUrl = canvasRef.current?.exportImage(exportFormat, quality);
     if (!dataUrl) return;
 
+    const ext = exportFormat === 'jpeg' ? 'jpg' : 'png';
     const link = document.createElement('a');
-    link.download = 'pred-branded.png';
+    link.download = `pred-branded.${ext}`;
     link.href = dataUrl;
     link.click();
 
     setShowToast(true);
+    setToastMessage(`Exported pred-branded.${ext}`);
+    if (toastTimeout.current) clearTimeout(toastTimeout.current);
+    toastTimeout.current = setTimeout(() => setShowToast(false), 2000);
+  }, [exportFormat]);
+
+  const handleCopy = useCallback(async () => {
+    const dataUrl = canvasRef.current?.exportImage('png');
+    if (!dataUrl) return;
+
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+
+    setShowToast(true);
+    setToastMessage('Copied to clipboard');
     if (toastTimeout.current) clearTimeout(toastTimeout.current);
     toastTimeout.current = setTimeout(() => setShowToast(false), 2000);
   }, []);
@@ -197,7 +216,7 @@ export default function Editor() {
             ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}
           `}
         >
-          Exported pred-branded.png
+          {toastMessage}
         </div>
       </div>
 
@@ -236,7 +255,10 @@ export default function Editor() {
         <div className="h-px bg-pred-border" />
 
         <ExportButton
+          format={exportFormat}
+          onFormatChange={setExportFormat}
           onExport={handleExport}
+          onCopy={handleCopy}
           disabled={!imageDataUrl}
         />
 

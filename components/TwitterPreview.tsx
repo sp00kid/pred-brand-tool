@@ -103,7 +103,7 @@ export default function TwitterPreview({ imageDataUrl, caption }: TwitterPreview
           maxWidth: '100%',
           background: colors.bg,
           border: `1px solid ${colors.border}`,
-          borderRadius: 16,
+          borderRadius: 0,
           fontFamily: fontStack,
           overflow: 'hidden',
         }}

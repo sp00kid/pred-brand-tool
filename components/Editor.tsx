@@ -32,7 +32,7 @@ export default function Editor() {
   const [cropId, setCropId] = useState('original');
 
   // Market banner state
-  const [bannerImageDataUrl, setBannerImageDataUrl] = useState<string | null>(null);
+  const [bannerImageDataUrl, setBannerImageDataUrl] = useState<string | null>('/mock/banner-default.png');
   const [bannerImageInfo, setBannerImageInfo] = useState<ImageInfo | null>(null);
   const [bannerFields, setBannerFields] = useState<MarketBannerFields>(defaultBannerFields);
 

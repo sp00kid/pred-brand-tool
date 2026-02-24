@@ -1,0 +1,47 @@
+import type { TemplateDefinition } from '../types';
+
+export const marketBannerTemplate: TemplateDefinition = {
+  id: 'market-banner',
+  name: 'Market Banner',
+  description: 'Dark-gradient matchup graphic for market announcements',
+  canvasWidth: 1080,
+  canvasHeight: 1368,
+  fields: [
+    { id: 'label',     label: 'Label',    type: 'text',   group: 'Match Info', default: 'NEW MARKET' },
+    { id: 'team1',     label: 'Team 1',   type: 'text',   group: 'Teams', default: 'Liverpool', half: true },
+    { id: 'team2',     label: 'Team 2',   type: 'text',   group: 'Teams', default: 'West Ham',  half: true },
+    { id: 'team1Abbr', label: 'Abbr 1',   type: 'text',   group: 'Teams', default: 'LIV', half: true },
+    { id: 'team2Abbr', label: 'Abbr 2',   type: 'text',   group: 'Teams', default: 'WHU', half: true },
+    { id: 'price1',    label: 'Price 1',  type: 'text',   group: 'Prices', default: '62¢', half: true },
+    { id: 'price2',    label: 'Price 2',  type: 'text',   group: 'Prices', default: '16¢', half: true },
+    { id: 'color1',    label: 'Color 1',  type: 'color',  group: 'Prices', default: '#D82126', half: true },
+    { id: 'color2',    label: 'Color 2',  type: 'color',  group: 'Prices', default: '#7C2C3B', half: true },
+    { id: 'league',    label: 'League',   type: 'text',   group: 'Match Info', default: 'Premier League', half: true },
+    { id: 'date',      label: 'Date',     type: 'text',   group: 'Match Info', default: 'Sat 28 Feb 2026', half: true },
+    {
+      id: 'status',
+      label: 'Status',
+      type: 'select',
+      group: 'Match Info',
+      default: 'MARKET LIVE',
+      options: [
+        { label: 'Market Live', value: 'MARKET LIVE' },
+        { label: 'Coming Soon', value: 'COMING SOON' },
+      ],
+    },
+  ],
+  defaultValues: {
+    label: 'NEW MARKET',
+    team1: 'Liverpool',
+    team2: 'West Ham',
+    team1Abbr: 'LIV',
+    team2Abbr: 'WHU',
+    price1: '62¢',
+    price2: '16¢',
+    color1: '#D82126',
+    color2: '#7C2C3B',
+    league: 'Premier League',
+    date: 'Sat 28 Feb 2026',
+    status: 'MARKET LIVE',
+  },
+};

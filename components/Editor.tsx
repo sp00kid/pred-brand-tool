@@ -3,63 +3,123 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import ImageUpload, { type ImageInfo } from './ImageUpload';
 import LogoCanvas, { type LogoCanvasHandle } from './LogoCanvas';
+import MarketBannerCanvas, { type MarketBannerCanvasHandle, type MarketBannerFields } from './MarketBannerCanvas';
 import LogoSelector from './LogoSelector';
 import ConstraintPanel from './ConstraintPanel';
 import ExportButton from './ExportButton';
 import CropSelector from './CropSelector';
 import TwitterPreview from './TwitterPreview';
+import MarketBannerSidebar from '@/lib/templates/market-banner/Sidebar';
 import { defaultConstraints, logoVariants, type LogoConstraints, type LogoVariant } from '@/lib/constraints';
+import { templates } from '@/lib/templates';
+import { marketBannerTemplate } from '@/lib/templates/market-banner';
+
+// Shared canvas handle interface
+type CanvasHandle = LogoCanvasHandle | MarketBannerCanvasHandle;
+
+const defaultBannerFields: MarketBannerFields = marketBannerTemplate.defaultValues as unknown as MarketBannerFields;
 
 export default function Editor() {
+  // Template state
+  const [activeTemplate, setActiveTemplate] = useState<string>('logo-overlay');
+
+  // Logo overlay state
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [constraints, setConstraints] = useState<LogoConstraints>(defaultConstraints);
   const [logoVariant, setLogoVariant] = useState<LogoVariant>(logoVariants[0]);
   const [imageInfo, setImageInfo] = useState<ImageInfo | null>(null);
+  const [cropRatio, setCropRatio] = useState<number | null>(null);
+  const [cropId, setCropId] = useState('original');
+
+  // Market banner state
+  const [bannerImageDataUrl, setBannerImageDataUrl] = useState<string | null>(null);
+  const [bannerImageInfo, setBannerImageInfo] = useState<ImageInfo | null>(null);
+  const [bannerFields, setBannerFields] = useState<MarketBannerFields>(defaultBannerFields);
+
+  // Shared state
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [exportFormat, setExportFormat] = useState<'png' | 'jpeg'>('png');
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [cropRatio, setCropRatio] = useState<number | null>(null);
-  const [cropId, setCropId] = useState('original');
   const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
-  const canvasRef = useRef<LogoCanvasHandle>(null);
+
+  const logoCanvasRef = useRef<LogoCanvasHandle>(null);
+  const bannerCanvasRef = useRef<MarketBannerCanvasHandle>(null);
   const toastTimeout = useRef<ReturnType<typeof setTimeout>>(null);
 
+  // Active canvas handle
+  const getActiveCanvas = useCallback((): CanvasHandle | null => {
+    if (activeTemplate === 'logo-overlay') return logoCanvasRef.current;
+    if (activeTemplate === 'market-banner') return bannerCanvasRef.current;
+    return null;
+  }, [activeTemplate]);
+
+  // Active image state helpers
+  const activeImageDataUrl = activeTemplate === 'logo-overlay' ? imageDataUrl : bannerImageDataUrl;
+  const activeImageInfo = activeTemplate === 'logo-overlay' ? imageInfo : bannerImageInfo;
+  // Logo overlay needs image to enable controls; market banner works without image
+  const hasContent = activeTemplate === 'logo-overlay' ? !!imageDataUrl : true;
+
   const handleImageUpload = useCallback((dataUrl: string, file: File) => {
-    setImageDataUrl(dataUrl);
-    setCropRatio(null);
-    setCropId('original');
+    if (activeTemplate === 'logo-overlay') {
+      setImageDataUrl(dataUrl);
+      setCropRatio(null);
+      setCropId('original');
+    } else {
+      setBannerImageDataUrl(dataUrl);
+    }
     setCaption('');
     setActiveTab('editor');
     setPreviewDataUrl(null);
+
     const img = new Image();
     img.onload = () => {
-      setImageInfo({ width: img.naturalWidth, height: img.naturalHeight, fileSize: file.size });
+      const info = { width: img.naturalWidth, height: img.naturalHeight, fileSize: file.size };
+      if (activeTemplate === 'logo-overlay') {
+        setImageInfo(info);
+      } else {
+        setBannerImageInfo(info);
+      }
     };
     img.src = dataUrl;
-  }, []);
+  }, [activeTemplate]);
 
   const handleExport = useCallback(() => {
+    const canvas = getActiveCanvas();
+    if (!canvas) return;
+
     const quality = exportFormat === 'jpeg' ? 0.85 : undefined;
-    const dataUrl = canvasRef.current?.exportImage(exportFormat, quality);
+    const dataUrl = canvas.exportImage(exportFormat, quality);
     if (!dataUrl) return;
 
     const ext = exportFormat === 'jpeg' ? 'jpg' : 'png';
+    let filename: string;
+    if (activeTemplate === 'market-banner') {
+      const a1 = bannerFields.team1Abbr || 'T1';
+      const a2 = bannerFields.team2Abbr || 'T2';
+      filename = `pred-${a1}-vs-${a2}.${ext}`;
+    } else {
+      filename = `pred-branded.${ext}`;
+    }
+
     const link = document.createElement('a');
-    link.download = `pred-branded.${ext}`;
+    link.download = filename;
     link.href = dataUrl;
     link.click();
 
     setShowToast(true);
-    setToastMessage(`Exported pred-branded.${ext}`);
+    setToastMessage(`Exported ${filename}`);
     if (toastTimeout.current) clearTimeout(toastTimeout.current);
     toastTimeout.current = setTimeout(() => setShowToast(false), 2000);
-  }, [exportFormat]);
+  }, [exportFormat, activeTemplate, bannerFields.team1Abbr, bannerFields.team2Abbr, getActiveCanvas]);
 
   const handleCopy = useCallback(async () => {
-    const dataUrl = canvasRef.current?.exportImage('png');
+    const canvas = getActiveCanvas();
+    if (!canvas) return;
+
+    const dataUrl = canvas.exportImage('png');
     if (!dataUrl) return;
 
     const res = await fetch(dataUrl);
@@ -70,32 +130,48 @@ export default function Editor() {
     setToastMessage('Copied to clipboard');
     if (toastTimeout.current) clearTimeout(toastTimeout.current);
     toastTimeout.current = setTimeout(() => setShowToast(false), 2000);
-  }, []);
+  }, [getActiveCanvas]);
 
   const handleTabChange = useCallback((tab: 'editor' | 'preview') => {
     if (tab === 'preview' && activeTab !== 'preview') {
-      const dataUrl = canvasRef.current?.getPreview();
+      const canvas = getActiveCanvas();
+      const dataUrl = canvas?.getPreview();
       setPreviewDataUrl(dataUrl ?? null);
     }
     setActiveTab(tab);
-  }, [activeTab]);
+  }, [activeTab, getActiveCanvas]);
 
-  // Re-capture preview when canvas-affecting state changes while in preview mode
+  // Re-capture preview when canvas state changes while in preview mode
   useEffect(() => {
     if (activeTab !== 'preview') return;
     const frame = requestAnimationFrame(() => {
-      const dataUrl = canvasRef.current?.getPreview();
+      const canvas = getActiveCanvas();
+      const dataUrl = canvas?.getPreview();
       if (dataUrl) setPreviewDataUrl(dataUrl);
     });
     return () => cancelAnimationFrame(frame);
-  }, [activeTab, constraints, logoVariant, cropRatio, zoomLevel]);
+  }, [activeTab, constraints, logoVariant, cropRatio, zoomLevel, bannerFields, getActiveCanvas]);
 
-  // Re-capture preview when user drags the image while in preview mode
   const handleCanvasUpdate = useCallback(() => {
     if (activeTab !== 'preview') return;
-    const dataUrl = canvasRef.current?.getPreview();
+    const canvas = getActiveCanvas();
+    const dataUrl = canvas?.getPreview();
     if (dataUrl) setPreviewDataUrl(dataUrl);
-  }, [activeTab]);
+  }, [activeTab, getActiveCanvas]);
+
+  // Reset zoom when switching templates
+  const handleTemplateSwitch = useCallback((templateId: string) => {
+    // Copy image to target template if it has no image yet
+    if (templateId === 'market-banner' && imageDataUrl && !bannerImageDataUrl) {
+      setBannerImageDataUrl(imageDataUrl);
+    } else if (templateId === 'logo-overlay' && bannerImageDataUrl && !imageDataUrl) {
+      setImageDataUrl(bannerImageDataUrl);
+    }
+    setActiveTemplate(templateId);
+    setZoomLevel(1);
+    setActiveTab('editor');
+    setPreviewDataUrl(null);
+  }, [imageDataUrl, bannerImageDataUrl]);
 
   useEffect(() => {
     return () => {
@@ -150,23 +226,35 @@ export default function Editor() {
           </div>
         </div>
 
-        {/* Canvas — always mounted so preview capture works when settings change */}
+        {/* Canvas — render both but only show active */}
         <div className="flex-1 flex flex-col relative">
-          <LogoCanvas
-            ref={canvasRef}
-            imageDataUrl={imageDataUrl}
-            constraints={constraints}
-            logoVariant={logoVariant}
-            cropRatio={cropRatio}
-            onZoomChange={setZoomLevel}
-            onCanvasUpdate={handleCanvasUpdate}
-          />
+          {activeTemplate === 'logo-overlay' && (
+            <LogoCanvas
+              ref={logoCanvasRef}
+              imageDataUrl={imageDataUrl}
+              constraints={constraints}
+              logoVariant={logoVariant}
+              cropRatio={cropRatio}
+              onZoomChange={setZoomLevel}
+              onCanvasUpdate={handleCanvasUpdate}
+            />
+          )}
 
-          {/* Zoom bar — only visible in editor mode */}
-          {activeTab === 'editor' && imageDataUrl && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-pred-surface/80 backdrop-blur-sm border border-pred-border rounded-full px-1.5 py-1">
+          {activeTemplate === 'market-banner' && (
+            <MarketBannerCanvas
+              ref={bannerCanvasRef}
+              fields={bannerFields}
+              imageDataUrl={bannerImageDataUrl}
+              onZoomChange={setZoomLevel}
+              onCanvasUpdate={handleCanvasUpdate}
+            />
+          )}
+
+          {/* Zoom bar — only visible in editor mode with image */}
+          {activeTab === 'editor' && activeImageDataUrl && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-pred-surface/80 backdrop-blur-sm border border-pred-border rounded-full px-1.5 py-1 opacity-0 hover:opacity-100 transition-opacity duration-200">
               <button
-                onClick={() => canvasRef.current?.zoomTo(Math.max(1, zoomLevel - 0.5))}
+                onClick={() => getActiveCanvas()?.zoomTo(Math.max(1, zoomLevel - 0.5))}
                 className="w-6 h-6 flex items-center justify-center rounded-full text-white/50 hover:text-white/80 hover:bg-white/5 transition-colors text-xs"
               >
                 −
@@ -175,14 +263,14 @@ export default function Editor() {
                 {Math.round(zoomLevel * 100)}%
               </span>
               <button
-                onClick={() => canvasRef.current?.zoomTo(Math.min(5, zoomLevel + 0.5))}
+                onClick={() => getActiveCanvas()?.zoomTo(Math.min(5, zoomLevel + 0.5))}
                 className="w-6 h-6 flex items-center justify-center rounded-full text-white/50 hover:text-white/80 hover:bg-white/5 transition-colors text-xs"
               >
                 +
               </button>
               <div className="w-px h-3.5 bg-pred-border mx-0.5" />
               <button
-                onClick={() => canvasRef.current?.resetFraming()}
+                onClick={() => getActiveCanvas()?.resetFraming()}
                 title="Reset framing"
                 className="w-6 h-6 flex items-center justify-center rounded-full text-white/50 hover:text-white/80 hover:bg-white/5 transition-colors text-xs"
               >
@@ -194,7 +282,7 @@ export default function Editor() {
             </div>
           )}
 
-          {/* Twitter Preview — overlaid on top when active */}
+          {/* Twitter Preview */}
           {activeTab === 'preview' && (
             <div className="absolute inset-0 z-10 flex flex-col">
               <TwitterPreview
@@ -222,35 +310,81 @@ export default function Editor() {
 
       {/* Sidebar */}
       <div className="w-72 border-l border-pred-border bg-pred-black p-5 flex flex-col gap-6 overflow-y-auto">
-        <ImageUpload
-          onImageUpload={handleImageUpload}
-          hasImage={!!imageDataUrl}
-          imageInfo={imageInfo}
-        />
+        {/* Template selector */}
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-wider text-white/50 mb-2">
+            Template
+          </p>
+          <div className="flex gap-1 bg-pred-surface rounded-md p-0.5">
+            {templates.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => handleTemplateSwitch(t.id)}
+                className={`
+                  flex-1 h-7 rounded text-[11px] font-semibold uppercase tracking-wider transition-all
+                  ${activeTemplate === t.id
+                    ? 'bg-white/10 text-white'
+                    : 'text-white/40 hover:text-white/60'
+                  }
+                `}
+              >
+                {t.id === 'logo-overlay' ? 'Logo' : 'Banner'}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="h-px bg-pred-border" />
 
-        <CropSelector
-          selectedId={cropId}
-          onChange={(ratio, id) => { setCropRatio(ratio); setCropId(id); }}
-          disabled={!imageDataUrl}
-        />
+        {/* Template-specific controls */}
+        {activeTemplate === 'logo-overlay' ? (
+          <>
+            <ImageUpload
+              onImageUpload={handleImageUpload}
+              hasImage={!!imageDataUrl}
+              imageInfo={imageInfo}
+            />
 
-        <div className="h-px bg-pred-border" />
+            <div className="h-px bg-pred-border" />
 
-        <LogoSelector
-          selectedId={logoVariant.id}
-          onChange={setLogoVariant}
-          disabled={!imageDataUrl}
-        />
+            <CropSelector
+              selectedId={cropId}
+              onChange={(ratio, id) => { setCropRatio(ratio); setCropId(id); }}
+              disabled={!imageDataUrl}
+            />
 
-        <div className="h-px bg-pred-border" />
+            <div className="h-px bg-pred-border" />
 
-        <ConstraintPanel
-          constraints={constraints}
-          onChange={setConstraints}
-          disabled={!imageDataUrl}
-        />
+            <LogoSelector
+              selectedId={logoVariant.id}
+              onChange={setLogoVariant}
+              disabled={!imageDataUrl}
+            />
+
+            <div className="h-px bg-pred-border" />
+
+            <ConstraintPanel
+              constraints={constraints}
+              onChange={setConstraints}
+              disabled={!imageDataUrl}
+            />
+          </>
+        ) : (
+          <>
+            <ImageUpload
+              onImageUpload={handleImageUpload}
+              hasImage={!!bannerImageDataUrl}
+              imageInfo={bannerImageInfo}
+            />
+
+            <div className="h-px bg-pred-border" />
+
+            <MarketBannerSidebar
+              fields={bannerFields}
+              onChange={setBannerFields}
+            />
+          </>
+        )}
 
         <div className="h-px bg-pred-border" />
 
@@ -259,11 +393,11 @@ export default function Editor() {
           onFormatChange={setExportFormat}
           onExport={handleExport}
           onCopy={handleCopy}
-          disabled={!imageDataUrl}
+          disabled={!hasContent}
         />
 
         {/* Tweet Caption */}
-        <div className={!imageDataUrl ? 'opacity-40 pointer-events-none' : ''}>
+        <div className={!hasContent ? 'opacity-40 pointer-events-none' : ''}>
           <p className="text-[11px] font-medium uppercase tracking-wider text-white/50 mb-2">
             Tweet Caption
           </p>

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Eurostile fonts loaded via FontFace API from WOFF2 in MarketBannerCanvas.tsx
+   (Tailwind v4 PostCSS strips @font-face from this file;
+    original TTF had corrupt cmap table — rebuilt with fonttools) */
+
 @theme inline {
   --color-pred-yellow: #F4FB37;
   --color-pred-black: #0D0D0D;

@@ -255,14 +255,22 @@ const MarketBannerCanvas = forwardRef<MarketBannerCanvasHandle, {
     }));
     curY += label.height! + s(LABEL_TEAM_GAP);
 
+    // Compute shared font size: both teams shrink together if either overflows
+    const baseFontSize = s(TEAM_SIZE);
+    const maxW = s(MAX_TW);
+    const teamStyle = { fontFamily: '"Eurostile Extended", sans-serif', fontWeight: '700' as const };
+    const t1Temp = new fabric.FabricText(f.team1, { fontSize: baseFontSize, ...teamStyle });
+    const t2Temp = new fabric.FabricText(f.team2, { fontSize: baseFontSize, ...teamStyle });
+    const teamFontSize = Math.min(
+      baseFontSize,
+      t1Temp.width! > maxW ? Math.floor(baseFontSize * maxW / t1Temp.width!) : baseFontSize,
+      t2Temp.width! > maxW ? Math.floor(baseFontSize * maxW / t2Temp.width!) : baseFontSize,
+    );
+
     const t1 = addCX(new fabric.FabricText(f.team1, {
       left: s(CW / 2), top: curY,
-      fontSize: s(TEAM_SIZE), fontFamily: '"Eurostile Extended", sans-serif',
-      fontWeight: '700', fill: '#fff',
+      fontSize: teamFontSize, ...teamStyle, fill: '#fff',
     }));
-    if (t1.width! > s(MAX_TW)) {
-      t1.set({ fontSize: Math.floor(s(TEAM_SIZE) * s(MAX_TW) / t1.width!) });
-    }
     curY += t1.height! + s(TEAM_VS_GAP);
 
     const vs = addCX(new fabric.FabricText('vs', {
@@ -274,12 +282,8 @@ const MarketBannerCanvas = forwardRef<MarketBannerCanvasHandle, {
 
     const t2 = addCX(new fabric.FabricText(f.team2, {
       left: s(CW / 2), top: curY,
-      fontSize: s(TEAM_SIZE), fontFamily: '"Eurostile Extended", sans-serif',
-      fontWeight: '700', fill: '#fff',
+      fontSize: teamFontSize, ...teamStyle, fill: '#fff',
     }));
-    if (t2.width! > s(MAX_TW)) {
-      t2.set({ fontSize: Math.floor(s(TEAM_SIZE) * s(MAX_TW) / t2.width!) });
-    }
     curY += t2.height! + s(TEAM2_INFO_GAP);
 
     // League • Date — dot is always at canvas center, text aligns toward it

@@ -516,9 +516,11 @@ const SoccerFixturesCanvas = forwardRef<SoccerFixturesCanvasHandle, {
     exportImage: (format: 'png' | 'jpeg', quality?: number) => {
       const c = fabricRef.current;
       if (!c) return null;
+      // Use devicePixelRatio to match retina viewport quality
+      const dpr = window.devicePixelRatio || 1;
       return c.toDataURL({
         format, quality: quality ?? 1,
-        multiplier: 1 / dsRef.current,
+        multiplier: dpr / dsRef.current,
         width: c.getWidth(), height: c.getHeight(),
       });
     },

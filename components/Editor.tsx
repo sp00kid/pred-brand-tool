@@ -4,18 +4,21 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import ImageUpload, { type ImageInfo } from './ImageUpload';
 import LogoCanvas, { type LogoCanvasHandle } from './LogoCanvas';
 import MarketBannerCanvas, { type MarketBannerCanvasHandle, type MarketBannerFields } from './MarketBannerCanvas';
+import SoccerFixturesCanvas, { type SoccerFixturesCanvasHandle, type SoccerFixturesFields } from './SoccerFixturesCanvas';
 import LogoSelector from './LogoSelector';
 import ConstraintPanel from './ConstraintPanel';
 import ExportButton from './ExportButton';
 import CropSelector from './CropSelector';
 import TwitterPreview from './TwitterPreview';
 import MarketBannerSidebar from '@/lib/templates/market-banner/Sidebar';
+import SoccerFixturesSidebar from '@/lib/templates/soccer-fixtures/Sidebar';
 import { defaultConstraints, logoVariants, type LogoConstraints, type LogoVariant } from '@/lib/constraints';
 import { templates } from '@/lib/templates';
 import { marketBannerTemplate } from '@/lib/templates/market-banner';
+import { soccerFixturesTemplate } from '@/lib/templates/soccer-fixtures';
 
 // Shared canvas handle interface
-type CanvasHandle = LogoCanvasHandle | MarketBannerCanvasHandle;
+type CanvasHandle = LogoCanvasHandle | MarketBannerCanvasHandle | SoccerFixturesCanvasHandle;
 
 const defaultBannerFields: MarketBannerFields = marketBannerTemplate.defaultValues as unknown as MarketBannerFields;
 
@@ -36,6 +39,13 @@ export default function Editor() {
   const [bannerImageInfo, setBannerImageInfo] = useState<ImageInfo | null>(null);
   const [bannerFields, setBannerFields] = useState<MarketBannerFields>(defaultBannerFields);
 
+  // Soccer fixtures state
+  const [fixturesImageDataUrl, setFixturesImageDataUrl] = useState<string | null>('/mock/fixtures-default.jpg');
+  const [fixturesImageInfo, setFixturesImageInfo] = useState<ImageInfo | null>(null);
+  const [fixturesFields, setFixturesFields] = useState<SoccerFixturesFields>(
+    soccerFixturesTemplate.defaultValues as unknown as SoccerFixturesFields
+  );
+
   // Shared state
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -47,19 +57,27 @@ export default function Editor() {
 
   const logoCanvasRef = useRef<LogoCanvasHandle>(null);
   const bannerCanvasRef = useRef<MarketBannerCanvasHandle>(null);
+  const fixturesCanvasRef = useRef<SoccerFixturesCanvasHandle>(null);
   const toastTimeout = useRef<ReturnType<typeof setTimeout>>(null);
 
   // Active canvas handle
   const getActiveCanvas = useCallback((): CanvasHandle | null => {
     if (activeTemplate === 'logo-overlay') return logoCanvasRef.current;
     if (activeTemplate === 'market-banner') return bannerCanvasRef.current;
+    if (activeTemplate === 'soccer-fixtures') return fixturesCanvasRef.current;
     return null;
   }, [activeTemplate]);
 
   // Active image state helpers
-  const activeImageDataUrl = activeTemplate === 'logo-overlay' ? imageDataUrl : bannerImageDataUrl;
-  const activeImageInfo = activeTemplate === 'logo-overlay' ? imageInfo : bannerImageInfo;
-  // Logo overlay needs image to enable controls; market banner works without image
+  const activeImageDataUrl =
+    activeTemplate === 'logo-overlay' ? imageDataUrl :
+    activeTemplate === 'market-banner' ? bannerImageDataUrl :
+    fixturesImageDataUrl;
+  const activeImageInfo =
+    activeTemplate === 'logo-overlay' ? imageInfo :
+    activeTemplate === 'market-banner' ? bannerImageInfo :
+    fixturesImageInfo;
+  // Logo overlay needs image to enable controls; other templates work without image
   const hasContent = activeTemplate === 'logo-overlay' ? !!imageDataUrl : true;
 
   const handleImageUpload = useCallback((dataUrl: string, file: File) => {
@@ -67,8 +85,10 @@ export default function Editor() {
       setImageDataUrl(dataUrl);
       setCropRatio(null);
       setCropId('original');
-    } else {
+    } else if (activeTemplate === 'market-banner') {
       setBannerImageDataUrl(dataUrl);
+    } else {
+      setFixturesImageDataUrl(dataUrl);
     }
     setCaption('');
     setActiveTab('editor');
@@ -79,8 +99,10 @@ export default function Editor() {
       const info = { width: img.naturalWidth, height: img.naturalHeight, fileSize: file.size };
       if (activeTemplate === 'logo-overlay') {
         setImageInfo(info);
-      } else {
+      } else if (activeTemplate === 'market-banner') {
         setBannerImageInfo(info);
+      } else {
+        setFixturesImageInfo(info);
       }
     };
     img.src = dataUrl;
@@ -100,6 +122,8 @@ export default function Editor() {
       const a1 = bannerFields.team1Abbr || 'T1';
       const a2 = bannerFields.team2Abbr || 'T2';
       filename = `pred-${a1}-vs-${a2}.${ext}`;
+    } else if (activeTemplate === 'soccer-fixtures') {
+      filename = `pred-fixtures-${fixturesFields.date.replace(/\s+/g, '-').toLowerCase()}.${ext}`;
     } else {
       filename = `pred-branded.${ext}`;
     }
@@ -113,7 +137,7 @@ export default function Editor() {
     setToastMessage(`Exported ${filename}`);
     if (toastTimeout.current) clearTimeout(toastTimeout.current);
     toastTimeout.current = setTimeout(() => setShowToast(false), 2000);
-  }, [exportFormat, activeTemplate, bannerFields.team1Abbr, bannerFields.team2Abbr, getActiveCanvas]);
+  }, [exportFormat, activeTemplate, bannerFields.team1Abbr, bannerFields.team2Abbr, fixturesFields.date, getActiveCanvas]);
 
   const handleCopy = useCallback(async () => {
     const canvas = getActiveCanvas();
@@ -150,7 +174,7 @@ export default function Editor() {
       if (dataUrl) setPreviewDataUrl(dataUrl);
     });
     return () => cancelAnimationFrame(frame);
-  }, [activeTab, constraints, logoVariant, cropRatio, zoomLevel, bannerFields, getActiveCanvas]);
+  }, [activeTab, constraints, logoVariant, cropRatio, zoomLevel, bannerFields, fixturesFields, getActiveCanvas]);
 
   const handleCanvasUpdate = useCallback(() => {
     if (activeTab !== 'preview') return;
@@ -162,16 +186,19 @@ export default function Editor() {
   // Reset zoom when switching templates
   const handleTemplateSwitch = useCallback((templateId: string) => {
     // Copy image to target template if it has no image yet
-    if (templateId === 'market-banner' && imageDataUrl && !bannerImageDataUrl) {
-      setBannerImageDataUrl(imageDataUrl);
-    } else if (templateId === 'logo-overlay' && bannerImageDataUrl && !imageDataUrl) {
-      setImageDataUrl(bannerImageDataUrl);
+    const sourceImage = imageDataUrl || bannerImageDataUrl || fixturesImageDataUrl;
+    if (templateId === 'market-banner' && sourceImage && !bannerImageDataUrl) {
+      setBannerImageDataUrl(sourceImage);
+    } else if (templateId === 'logo-overlay' && sourceImage && !imageDataUrl) {
+      setImageDataUrl(sourceImage);
+    } else if (templateId === 'soccer-fixtures' && sourceImage && !fixturesImageDataUrl) {
+      setFixturesImageDataUrl(sourceImage);
     }
     setActiveTemplate(templateId);
     setZoomLevel(1);
     setActiveTab('editor');
     setPreviewDataUrl(null);
-  }, [imageDataUrl, bannerImageDataUrl]);
+  }, [imageDataUrl, bannerImageDataUrl, fixturesImageDataUrl]);
 
   useEffect(() => {
     return () => {
@@ -245,6 +272,16 @@ export default function Editor() {
               ref={bannerCanvasRef}
               fields={bannerFields}
               imageDataUrl={bannerImageDataUrl}
+              onZoomChange={setZoomLevel}
+              onCanvasUpdate={handleCanvasUpdate}
+            />
+          )}
+
+          {activeTemplate === 'soccer-fixtures' && (
+            <SoccerFixturesCanvas
+              ref={fixturesCanvasRef}
+              fields={fixturesFields}
+              imageDataUrl={fixturesImageDataUrl}
               onZoomChange={setZoomLevel}
               onCanvasUpdate={handleCanvasUpdate}
             />
@@ -328,7 +365,7 @@ export default function Editor() {
                   }
                 `}
               >
-                {t.id === 'logo-overlay' ? 'Logo' : 'Banner'}
+                {t.id === 'logo-overlay' ? 'Logo' : t.id === 'market-banner' ? 'Banner' : 'Fixtures'}
               </button>
             ))}
           </div>
@@ -369,7 +406,7 @@ export default function Editor() {
               disabled={!imageDataUrl}
             />
           </>
-        ) : (
+        ) : activeTemplate === 'market-banner' ? (
           <>
             <ImageUpload
               onImageUpload={handleImageUpload}
@@ -382,6 +419,21 @@ export default function Editor() {
             <MarketBannerSidebar
               fields={bannerFields}
               onChange={setBannerFields}
+            />
+          </>
+        ) : (
+          <>
+            <ImageUpload
+              onImageUpload={handleImageUpload}
+              hasImage={!!fixturesImageDataUrl}
+              imageInfo={fixturesImageInfo}
+            />
+
+            <div className="h-px bg-pred-border" />
+
+            <SoccerFixturesSidebar
+              fields={fixturesFields}
+              onChange={setFixturesFields}
             />
           </>
         )}

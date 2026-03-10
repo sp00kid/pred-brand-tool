@@ -5,6 +5,7 @@ import ImageUpload, { type ImageInfo } from './ImageUpload';
 import LogoCanvas, { type LogoCanvasHandle } from './LogoCanvas';
 import MarketBannerCanvas, { type MarketBannerCanvasHandle, type MarketBannerFields } from './MarketBannerCanvas';
 import SoccerFixturesCanvas, { type SoccerFixturesCanvasHandle, type SoccerFixturesFields } from './SoccerFixturesCanvas';
+import HalftimeScoreCanvas, { type HalftimeScoreCanvasHandle } from './HalftimeScoreCanvas';
 import LogoSelector from './LogoSelector';
 import ConstraintPanel from './ConstraintPanel';
 import ExportButton from './ExportButton';
@@ -12,13 +13,14 @@ import CropSelector from './CropSelector';
 import TwitterPreview from './TwitterPreview';
 import MarketBannerSidebar from '@/lib/templates/market-banner/Sidebar';
 import SoccerFixturesSidebar from '@/lib/templates/soccer-fixtures/Sidebar';
+import HalftimeScoreSidebar, { type HalftimeScoreFields } from '@/lib/templates/halftime-score/Sidebar';
 import { defaultConstraints, logoVariants, type LogoConstraints, type LogoVariant } from '@/lib/constraints';
 import { templates } from '@/lib/templates';
 import { marketBannerTemplate } from '@/lib/templates/market-banner';
 import { soccerFixturesTemplate } from '@/lib/templates/soccer-fixtures';
 
 // Shared canvas handle interface
-type CanvasHandle = LogoCanvasHandle | MarketBannerCanvasHandle | SoccerFixturesCanvasHandle;
+type CanvasHandle = LogoCanvasHandle | MarketBannerCanvasHandle | SoccerFixturesCanvasHandle | HalftimeScoreCanvasHandle;
 
 const defaultBannerFields: MarketBannerFields = marketBannerTemplate.defaultValues as unknown as MarketBannerFields;
 
@@ -46,6 +48,18 @@ export default function Editor() {
     soccerFixturesTemplate.defaultValues as unknown as SoccerFixturesFields
   );
 
+  // Halftime score state
+  const [halftimeFields, setHalftimeFields] = useState<HalftimeScoreFields>({
+    homeTeam: 'real-madrid',
+    awayTeam: 'barcelona',
+    homeScore: '0',
+    awayScore: '2',
+    homeOdds: '30',
+    awayOdds: '52',
+    status: 'LIVE',
+    league: 'la-liga',
+  });
+
   // Shared state
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -58,6 +72,7 @@ export default function Editor() {
   const logoCanvasRef = useRef<LogoCanvasHandle>(null);
   const bannerCanvasRef = useRef<MarketBannerCanvasHandle>(null);
   const fixturesCanvasRef = useRef<SoccerFixturesCanvasHandle>(null);
+  const halftimeCanvasRef = useRef<HalftimeScoreCanvasHandle>(null);
   const toastTimeout = useRef<ReturnType<typeof setTimeout>>(null);
 
   // Active canvas handle
@@ -65,6 +80,7 @@ export default function Editor() {
     if (activeTemplate === 'logo-overlay') return logoCanvasRef.current;
     if (activeTemplate === 'market-banner') return bannerCanvasRef.current;
     if (activeTemplate === 'soccer-fixtures') return fixturesCanvasRef.current;
+    if (activeTemplate === 'halftime-score') return halftimeCanvasRef.current;
     return null;
   }, [activeTemplate]);
 
@@ -72,11 +88,13 @@ export default function Editor() {
   const activeImageDataUrl =
     activeTemplate === 'logo-overlay' ? imageDataUrl :
     activeTemplate === 'market-banner' ? bannerImageDataUrl :
-    fixturesImageDataUrl;
+    activeTemplate === 'soccer-fixtures' ? fixturesImageDataUrl :
+    null;
   const activeImageInfo =
     activeTemplate === 'logo-overlay' ? imageInfo :
     activeTemplate === 'market-banner' ? bannerImageInfo :
-    fixturesImageInfo;
+    activeTemplate === 'soccer-fixtures' ? fixturesImageInfo :
+    null;
   // Logo overlay needs image to enable controls; other templates work without image
   const hasContent = activeTemplate === 'logo-overlay' ? !!imageDataUrl : true;
 
@@ -174,7 +192,7 @@ export default function Editor() {
       if (dataUrl) setPreviewDataUrl(dataUrl);
     });
     return () => cancelAnimationFrame(frame);
-  }, [activeTab, constraints, logoVariant, cropRatio, zoomLevel, bannerFields, fixturesFields, getActiveCanvas]);
+  }, [activeTab, constraints, logoVariant, cropRatio, zoomLevel, bannerFields, fixturesFields, halftimeFields, getActiveCanvas]);
 
   const handleCanvasUpdate = useCallback(() => {
     if (activeTab !== 'preview') return;
@@ -287,6 +305,16 @@ export default function Editor() {
             />
           )}
 
+          {activeTemplate === 'halftime-score' && (
+            <HalftimeScoreCanvas
+              ref={halftimeCanvasRef}
+              fields={halftimeFields}
+              imageDataUrl={null}
+              onZoomChange={setZoomLevel}
+              onCanvasUpdate={handleCanvasUpdate}
+            />
+          )}
+
           {/* Zoom bar — only visible in editor mode with image */}
           {activeTab === 'editor' && activeImageDataUrl && (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-pred-surface/80 backdrop-blur-sm border border-pred-border rounded-full px-1.5 py-1 opacity-0 hover:opacity-100 transition-opacity duration-200">
@@ -365,7 +393,7 @@ export default function Editor() {
                   }
                 `}
               >
-                {t.id === 'logo-overlay' ? 'Logo' : t.id === 'market-banner' ? 'Banner' : 'Fixtures'}
+                {t.id === 'logo-overlay' ? 'Logo' : t.id === 'market-banner' ? 'Banner' : t.id === 'soccer-fixtures' ? 'Fixtures' : 'Halftime'}
               </button>
             ))}
           </div>
@@ -421,7 +449,7 @@ export default function Editor() {
               onChange={setBannerFields}
             />
           </>
-        ) : (
+        ) : activeTemplate === 'soccer-fixtures' ? (
           <>
             <ImageUpload
               onImageUpload={handleImageUpload}
@@ -434,6 +462,13 @@ export default function Editor() {
             <SoccerFixturesSidebar
               fields={fixturesFields}
               onChange={setFixturesFields}
+            />
+          </>
+        ) : (
+          <>
+            <HalftimeScoreSidebar
+              fields={halftimeFields}
+              onChange={setHalftimeFields}
             />
           </>
         )}

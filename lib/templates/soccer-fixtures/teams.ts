@@ -128,6 +128,15 @@ export const leagues: League[] = [
     ],
   },
   {
+    id: 'super-lig',
+    name: 'Süper Lig',
+    teams: [
+      { id: 'besiktas', name: 'Beşiktaş', badge: 'besiktas.png' },
+      { id: 'fenerbahce', name: 'Fenerbahçe', badge: 'fenerbahce.png' },
+      { id: 'galatasaray', name: 'Galatasaray', badge: 'galatasaray.png' },
+    ],
+  },
+  {
     id: 'other-european',
     name: 'Other European',
     teams: [

@@ -83,7 +83,7 @@ export const leagues: League[] = [
       { id: 'bologna', name: 'Bologna', badge: 'bologna.png' },
       { id: 'fiorentina', name: 'Fiorentina', badge: 'fiorentina.png' },
       { id: 'intermilan', name: 'Inter Milan', badge: 'intermilan.png' },
-      { id: 'juventus', name: 'Juventus', badge: 'juventus.png' },
+      { id: 'juventus', name: 'Juventus', badge: 'juventus_white.png' },
       { id: 'lazio', name: 'Lazio', badge: 'lazio.png' },
       { id: 'napoli', name: 'Napoli', badge: 'napoli.png' },
       { id: 'roma', name: 'Roma', badge: 'roma.png' },

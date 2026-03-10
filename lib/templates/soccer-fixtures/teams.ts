@@ -32,7 +32,7 @@ export const leagues: League[] = [
       { id: 'newcastle', name: 'Newcastle', badge: 'newcastle.png' },
       { id: 'nottmforest', name: "Nott'm Forest", badge: 'nottmforest.png' },
       { id: 'southampton', name: 'Southampton', badge: 'southampton.png' },
-      { id: 'tottenham', name: 'Tottenham', badge: 'tottenham.png' },
+      { id: 'tottenham', name: 'Tottenham', badge: 'tottenham_white.png' },
       { id: 'westham', name: 'West Ham', badge: 'westham.png' },
       { id: 'wolves', name: 'Wolves', badge: 'wolves.png' },
     ],

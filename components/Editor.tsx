@@ -49,6 +49,8 @@ export default function Editor() {
   );
 
   // Halftime score state
+  const [halftimeImageDataUrl, setHalftimeImageDataUrl] = useState<string | null>('/mock/halftime-default.jpg');
+  const [halftimeImageInfo, setHalftimeImageInfo] = useState<ImageInfo | null>(null);
   const [halftimeFields, setHalftimeFields] = useState<HalftimeScoreFields>({
     homeTeam: 'real-madrid',
     awayTeam: 'barcelona',
@@ -89,11 +91,13 @@ export default function Editor() {
     activeTemplate === 'logo-overlay' ? imageDataUrl :
     activeTemplate === 'market-banner' ? bannerImageDataUrl :
     activeTemplate === 'soccer-fixtures' ? fixturesImageDataUrl :
+    activeTemplate === 'halftime-score' ? halftimeImageDataUrl :
     null;
   const activeImageInfo =
     activeTemplate === 'logo-overlay' ? imageInfo :
     activeTemplate === 'market-banner' ? bannerImageInfo :
     activeTemplate === 'soccer-fixtures' ? fixturesImageInfo :
+    activeTemplate === 'halftime-score' ? halftimeImageInfo :
     null;
   // Logo overlay needs image to enable controls; other templates work without image
   const hasContent = activeTemplate === 'logo-overlay' ? !!imageDataUrl : true;
@@ -105,6 +109,8 @@ export default function Editor() {
       setCropId('original');
     } else if (activeTemplate === 'market-banner') {
       setBannerImageDataUrl(dataUrl);
+    } else if (activeTemplate === 'halftime-score') {
+      setHalftimeImageDataUrl(dataUrl);
     } else {
       setFixturesImageDataUrl(dataUrl);
     }
@@ -204,13 +210,15 @@ export default function Editor() {
   // Reset zoom when switching templates
   const handleTemplateSwitch = useCallback((templateId: string) => {
     // Copy image to target template if it has no image yet
-    const sourceImage = imageDataUrl || bannerImageDataUrl || fixturesImageDataUrl;
+    const sourceImage = imageDataUrl || bannerImageDataUrl || fixturesImageDataUrl || halftimeImageDataUrl;
     if (templateId === 'market-banner' && sourceImage && !bannerImageDataUrl) {
       setBannerImageDataUrl(sourceImage);
     } else if (templateId === 'logo-overlay' && sourceImage && !imageDataUrl) {
       setImageDataUrl(sourceImage);
     } else if (templateId === 'soccer-fixtures' && sourceImage && !fixturesImageDataUrl) {
       setFixturesImageDataUrl(sourceImage);
+    } else if (templateId === 'halftime-score' && sourceImage && !halftimeImageDataUrl) {
+      setHalftimeImageDataUrl(sourceImage);
     }
     setActiveTemplate(templateId);
     setZoomLevel(1);
@@ -309,7 +317,7 @@ export default function Editor() {
             <HalftimeScoreCanvas
               ref={halftimeCanvasRef}
               fields={halftimeFields}
-              imageDataUrl={null}
+              imageDataUrl={halftimeImageDataUrl}
               onZoomChange={setZoomLevel}
               onCanvasUpdate={handleCanvasUpdate}
             />
@@ -466,6 +474,14 @@ export default function Editor() {
           </>
         ) : (
           <>
+            <ImageUpload
+              onImageUpload={handleImageUpload}
+              hasImage={!!halftimeImageDataUrl}
+              imageInfo={halftimeImageInfo}
+            />
+
+            <div className="h-px bg-pred-border" />
+
             <HalftimeScoreSidebar
               fields={halftimeFields}
               onChange={setHalftimeFields}

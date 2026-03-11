@@ -10,6 +10,7 @@ Eredivisie: ajax (Ajax), feyenoord (Feyenoord), psv (PSV)
 Liga Portugal: benfica (Benfica), porto (FC Porto), sportingcp (Sporting CP)
 Scottish Premiership: celtic (Celtic), rangers (Rangers)
 Süper Lig: besiktas (Beşiktaş), fenerbahce (Fenerbahçe), galatasaray (Galatasaray)
+Eliteserien: bodoglimt (Bodø/Glimt)
 Other European: clubbrugge (Club Brugge), dinamozagreb (Dinamo Zagreb), redstarbelgrade (Red Star Belgrade), salzburg (Red Bull Salzburg), shakhtardonetsk (Shakhtar Donetsk), slovanbratislava (Slovan Bratislava), spartaprague (Sparta Prague), sturmgraz (Sturm Graz), youngboys (Young Boys)
 `.trim();
 

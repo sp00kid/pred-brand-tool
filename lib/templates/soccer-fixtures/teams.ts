@@ -139,6 +139,13 @@ export const leagues: League[] = [
     ],
   },
   {
+    id: 'eliteserien',
+    name: 'Eliteserien',
+    teams: [
+      { id: 'bodoglimt', name: 'Bodø/Glimt', badge: 'bodoglimt.png', primaryColor: '#FFD700', borderColor: '#9A8200' },
+    ],
+  },
+  {
     id: 'other-european',
     name: 'Other European',
     teams: [

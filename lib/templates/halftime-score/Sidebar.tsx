@@ -126,7 +126,6 @@ function QuickFill({ fields, onChange }: HalftimeScoreSidebarProps) {
       if (data.league) updated.league = data.league;
 
       onChange({ ...fields, ...updated });
-      setInput('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {

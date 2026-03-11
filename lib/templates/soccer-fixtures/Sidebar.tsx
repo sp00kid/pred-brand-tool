@@ -80,7 +80,6 @@ function MatchParser({ fields, onChange }: SidebarProps) {
       if (data.matches?.length) updated.matches = data.matches;
 
       onChange({ ...fields, ...updated });
-      setInput('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {

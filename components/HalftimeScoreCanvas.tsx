@@ -343,14 +343,14 @@ const HalftimeScoreCanvas = forwardRef<HalftimeScoreCanvasHandle, {
       left: s(homeColCX),
       top: s(scoreTop),
       fontSize: s(SCORE_FONT_SIZE),
-      fontFamily: 'Geist-Black',
+      fontFamily: 'Geist', fontWeight: '800',
       fill: '#FFFFFF',
     }));
     addCX(new fabric.FabricText(f.awayScore, {
       left: s(awayColCX),
       top: s(scoreTop),
       fontSize: s(SCORE_FONT_SIZE),
-      fontFamily: 'Geist-Black',
+      fontFamily: 'Geist', fontWeight: '800',
       fill: '#FFFFFF',
     }));
 
@@ -452,7 +452,7 @@ const HalftimeScoreCanvas = forwardRef<HalftimeScoreCanvasHandle, {
       // Pill text centered in pill, clipped
       const pillText = new fabric.FabricText(`${abbr} ${odds}%`, {
         fontSize: s(PILL_FONT_SIZE),
-        fontFamily: 'Geist-SemiBold',
+        fontFamily: 'Geist', fontWeight: '600',
         fill: '#FFFFFF',
         originX: 'center', originY: 'center',
         left: s(pLeft + PILL_W / 2),

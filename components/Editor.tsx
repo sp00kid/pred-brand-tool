@@ -49,7 +49,7 @@ export default function Editor() {
   );
 
   // Halftime score state
-  const [halftimeImageDataUrl, setHalftimeImageDataUrl] = useState<string | null>('/mock/halftime-default.jpg');
+  const [halftimeImageDataUrl, setHalftimeImageDataUrl] = useState<string | null>('/images/halftime-default-bg.jpg');
   const [halftimeImageInfo, setHalftimeImageInfo] = useState<ImageInfo | null>(null);
   const [halftimeFields, setHalftimeFields] = useState<HalftimeScoreFields>({
     homeTeam: 'realmadrid',
@@ -382,7 +382,7 @@ export default function Editor() {
       </div>
 
       {/* Sidebar */}
-      <div className="w-72 border-l border-pred-border bg-pred-black p-5 flex flex-col gap-6 overflow-y-auto">
+      <div className="w-80 border-l border-pred-border bg-pred-black p-5 flex flex-col gap-6 overflow-y-auto">
         {/* Template selector */}
         <div>
           <p className="text-[11px] font-medium uppercase tracking-wider text-white/50 mb-2">

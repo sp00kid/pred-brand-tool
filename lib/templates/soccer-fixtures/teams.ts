@@ -32,7 +32,7 @@ export const leagues: League[] = [
       { id: 'mancity', name: 'Man City', badge: 'mancity.png', primaryColor: '#6CABDD', borderColor: '#2A6494' },
       { id: 'manutd', name: 'Man United', badge: 'manutd.png', primaryColor: '#DA291C', borderColor: '#6E100B' },
       { id: 'newcastle', name: 'Newcastle', badge: 'newcastle.png', primaryColor: '#241F20', borderColor: '#000000' },
-      { id: 'nottmforest', name: "Nott'm Forest", badge: 'nottmforest.png', primaryColor: '#DD0000', borderColor: '#6E0000' },
+      { id: 'nottmforest', name: "Nott'm Forest", badge: 'nottmforest.png', primaryColor: '#FF4D4D', borderColor: '#6E0000' },
       { id: 'southampton', name: 'Southampton', badge: 'southampton.png', primaryColor: '#D71920', borderColor: '#6C0009' },
       { id: 'tottenham', name: 'Tottenham', badge: 'tottenham_white.png', primaryColor: '#132257', borderColor: '#060D26' },
       { id: 'westham', name: 'West Ham', badge: 'westham.png', primaryColor: '#7A263A', borderColor: '#3A0F1A' },

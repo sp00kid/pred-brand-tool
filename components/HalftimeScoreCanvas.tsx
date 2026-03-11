@@ -27,27 +27,30 @@ export interface HalftimeScoreCanvasHandle {
 const CW = 1080;
 const CH = 1080;
 
-// Layout constants (native coords)
+// Layout constants (native coords) — from Paper design
 const LOCKUP_X = 45;
-const LOCKUP_Y = 45;
+const LOCKUP_Y = 23;
 const LOCKUP_W = 188;
 
-const STATUS_MARGIN_RIGHT = 45;
+const STATUS_FONT_SIZE = 47;
 
 const SCORE_FONT_SIZE = 200;
-const SCORE_INSET = 180; // distance from edge for score numbers
 
-const LEAGUE_LOGO_SIZE = 202;
+// (Column positions are computed as absolute values in buildOverlays)
+
+const LEAGUE_LOGO_W = 202;
+const LEAGUE_LOGO_H = 206;
 
 const PILL_W = 286;
-const PILL_H = 128;
+const PILL_H = 138;
 const PILL_R = 35;
 const PILL_BORDER_H = 10;
-const PILL_FONT_SIZE = 54;
+const PILL_FONT_SIZE = 45;
 
 const PRED_ICON_W = 133;
 const PRED_ICON_H = 131;
-const PRED_ICON_R = 24;
+const PRED_ICON_R = 26;
+const PRED_ICON_BORDER_H = 9;
 
 const CLAMP_MARGIN = 0.50;
 
@@ -128,21 +131,21 @@ const HalftimeScoreCanvas = forwardRef<HalftimeScoreCanvasHandle, {
         const fontLoads: Promise<ArrayBuffer>[] = [
           fetch('/fonts/Geist-SemiBold.woff2').then(r => r.arrayBuffer()),
           fetch('/fonts/Geist-Bold.woff2').then(r => r.arrayBuffer()),
-          fetch('/fonts/Geist-ExtraBoldItalic.woff2').then(r => r.arrayBuffer()),
+          fetch('/fonts/Geist-Black.woff2').then(r => r.arrayBuffer()),
         ];
-        const [bufSemiBold, bufBold, bufExtraBold] = await Promise.all(fontLoads);
+        const [bufSemiBold, bufBold, bufBlack] = await Promise.all(fontLoads);
         if (cancelled) return;
 
         const geistFonts = [
           new FontFace('Geist', bufSemiBold, { weight: '600' }),
           new FontFace('Geist', bufBold, { weight: '700' }),
-          new FontFace('Geist', bufExtraBold, { weight: '800' }),
+          new FontFace('Geist', bufBlack, { weight: '800' }), // Geist-Black is weight class 800
         ];
 
         // Barlow Condensed Black Italic
         const barlowFont = new FontFace(
           'Barlow Condensed',
-          'url(https://fonts.gstatic.com/s/barlowcondensed/v12/HTxxL3I-JCGChYJ8VI-L6OO_au7B46r_04MvKQ.woff2)',
+          'url(https://fonts.gstatic.com/s/barlowcondensed/v13/HTxyL3I-JCGChYJ8VI-L6OO_au7B6xTrW3bmu4kG.woff2)',
           { weight: '900', style: 'italic' }
         );
 
@@ -247,14 +250,38 @@ const HalftimeScoreCanvas = forwardRef<HalftimeScoreCanvasHandle, {
     const awayTeam = getTeamById(f.awayTeam);
     const league = getLeagueById(f.league);
 
-    // 1. Dark overlay
+    // 1. Gradient overlay (from Paper: black/37% top → transparent → black/50% → solid black at bottom)
+    // Fabric doesn't support multi-stop gradients with alpha easily, so we stack two rects
+    // Top fade — use -1/+2 to prevent subpixel gaps at edges
     add(new fabric.Rect({
-      left: 0, top: 0,
-      width: s(CW), height: s(CH),
-      fill: 'rgba(0,0,0,0.55)',
+      left: -1, top: -1,
+      width: s(CW) + 2, height: s(CH * 0.35) + 1,
+      fill: new fabric.Gradient({
+        type: 'linear',
+        coords: { x1: 0, y1: 0, x2: 0, y2: s(CH * 0.35) },
+        colorStops: [
+          { offset: 0, color: 'rgba(0,0,0,0.37)' },
+          { offset: 1, color: 'rgba(0,0,0,0)' },
+        ],
+      }),
+    }));
+    // Bottom fade (covers lower ~65% of canvas) — use -1/+2 to prevent subpixel gaps
+    add(new fabric.Rect({
+      left: -1, top: s(CH * 0.35),
+      width: s(CW) + 2, height: s(CH * 0.65) + 1,
+      fill: new fabric.Gradient({
+        type: 'linear',
+        coords: { x1: 0, y1: 0, x2: 0, y2: s(CH * 0.65) },
+        colorStops: [
+          { offset: 0, color: 'rgba(0,0,0,0)' },
+          { offset: 0.43, color: 'rgba(0,0,0,0.50)' },  // ~62.9% of canvas
+          { offset: 0.74, color: 'rgba(0,0,0,1)' },      // ~83.3% of canvas
+          { offset: 1, color: 'rgba(0,0,0,1)' },
+        ],
+      }),
     }));
 
-    // 2. Pred lockup — top-left
+    // 2. Pred lockup — top-left (top=23, left=45)
     try {
       const lockup = await fabric.FabricImage.fromURL('/logos/lockup-white.svg');
       if (buildIdRef.current !== id) return;
@@ -267,178 +294,217 @@ const HalftimeScoreCanvas = forwardRef<HalftimeScoreCanvasHandle, {
     } catch { /* optional */ }
     if (buildIdRef.current !== id) return;
 
-    // 3. Status tag — top-right
+    // 3. Status tag — top-right (top=23, right=45, Barlow Condensed 900 italic 47px, #EBF132)
     const statusText = add(new fabric.FabricText(f.status, {
-      fontSize: s(58),
+      fontSize: s(STATUS_FONT_SIZE),
+      lineHeight: 58 / STATUS_FONT_SIZE,
       fontFamily: '"Barlow Condensed", sans-serif',
       fontWeight: '900',
       fontStyle: 'italic',
-      fill: '#22C55E',
-      left: s(CW - STATUS_MARGIN_RIGHT),
-      top: s(50),
+      fill: '#EBF132',
+      letterSpacing: s(STATUS_FONT_SIZE * 0.02),
+      left: s(CW - LOCKUP_X),
+      top: s(LOCKUP_Y),
     }));
     statusText.set({ originX: 'right' });
 
-    // 4. Score numbers — positioned in lower portion of canvas (matching Paper design)
-    const scoreCenterY = CH * 0.62;
+    // ── Score + Odds layout — absolute pixel positions from Paper JSX ──
+    // Paper frame: position:absolute, bottom:36, left:80, right:80
+    // display:flex, align-items:flex-end, justify-content:center, gap:14px
+    // Content = 286 + 14 + 202 + 14 + 286 = 802px, centered in 920px frame
+    // offset = (920 - 802) / 2 = 59px from frame left
+    //
+    // Home column (286×350): score(200) + gap(12) + pill(138)
+    // Center column (202×363+6pad): logo(206) + gap(26) + icon(131) + pad(6)
+    // Away column (286×350): score(200) + gap(12) + pill(138)
+    //
+    // Absolute Y positions (from top, bottom of frame = 1080-36 = 1044):
+    //   Pill top:       1044 - 138 = 906
+    //   Score top:      906 - 12 - 200 = 694
+    //   Pred icon top:  1044 - 6(pad) - 131 = 907
+    //   League logo top: 907 - 26 - 206 = 675
+    //
+    // Absolute X positions (column centers):
+    //   Home:   80 + 59 + 143 = 282
+    //   Center: 80 + 59 + 286 + 14 + 101 = 540
+    //   Away:   80 + 59 + 286 + 14 + 202 + 14 + 143 = 798
 
-    // Home score — left column
+    const homeColCX = 282;
+    const centerColCX = 540;
+    const awayColCX = 798;
+
+    const scoreTop = 694;
+    const pillTop = 906;
+    const leagueLogoTop = 675;
+    const predIconTop = 907;
+
+    // 4. Score numbers — Geist Black
     addCX(new fabric.FabricText(f.homeScore, {
-      left: s(SCORE_INSET + 90),
-      top: s(scoreCenterY - SCORE_FONT_SIZE / 2),
+      left: s(homeColCX),
+      top: s(scoreTop),
       fontSize: s(SCORE_FONT_SIZE),
-      fontFamily: 'Geist, sans-serif',
-      fontWeight: '800',
+      fontFamily: 'Geist-Black',
       fill: '#FFFFFF',
     }));
-
-    // Away score — right column
     addCX(new fabric.FabricText(f.awayScore, {
-      left: s(CW - SCORE_INSET - 90),
-      top: s(scoreCenterY - SCORE_FONT_SIZE / 2),
+      left: s(awayColCX),
+      top: s(scoreTop),
       fontSize: s(SCORE_FONT_SIZE),
-      fontFamily: 'Geist, sans-serif',
-      fontWeight: '800',
+      fontFamily: 'Geist-Black',
       fill: '#FFFFFF',
     }));
 
-    // 5. League logo — center between scores, low opacity
+    // 5. League logo — center column, full opacity, 202×206
     if (league) {
       const leagueBadge = await loadImageCached('/badges/' + league.logo);
       if (buildIdRef.current !== id) return;
       if (leagueBadge) {
-        const targetSize = LEAGUE_LOGO_SIZE;
-        const badgeScale = (targetSize / Math.max(leagueBadge.width!, leagueBadge.height!)) * ds;
+        const scaleW = (LEAGUE_LOGO_W / leagueBadge.width!) * ds;
+        const scaleH = (LEAGUE_LOGO_H / leagueBadge.height!) * ds;
+        const badgeScale = Math.min(scaleW, scaleH);
+        const scaledW = leagueBadge.width! * badgeScale;
+        const scaledH = leagueBadge.height! * badgeScale;
+        // Tint league logo white (some source files are colored)
+        leagueBadge.filters = [
+          new fabric.filters.BlendColor({ color: 'white', mode: 'tint', alpha: 1 }),
+        ];
+        leagueBadge.applyFilters();
         leagueBadge.set({
           scaleX: badgeScale, scaleY: badgeScale,
-          left: s(CW / 2) - (leagueBadge.width! * badgeScale) / 2,
-          top: s(scoreCenterY) - (leagueBadge.height! * badgeScale) / 2,
-          opacity: 0.15,
+          left: s(centerColCX) - scaledW / 2,
+          top: s(leagueLogoTop) + (s(LEAGUE_LOGO_H) - scaledH) / 2,
         });
         add(leagueBadge);
       }
     }
 
-    // 6. Team pills
-    const pillY = scoreCenterY + SCORE_FONT_SIZE / 2 + 30;
-    const homeColCenterX = SCORE_INSET + 90;
-    const awayColCenterX = CW - SCORE_INSET - 90;
-
+    // 6. Team pills — each rendered as individual canvas objects clipped by a shared absolutePositioned clipPath
+    // Using absolutePositioned clipPath avoids the Fabric.js group center shift bug caused by
+    // badge watermarks extending outside pill bounds (e.g. top=-66)
     const buildPill = async (
       teamId: string,
       teamName: string,
       odds: string,
-      centerX: number,
+      colCenterX: number,
       isHome: boolean,
     ) => {
       const team = isHome ? homeTeam : awayTeam;
       if (!team) return;
 
       const abbr = getTeamAbbr(teamId, teamName);
-      const pillLeft = centerX - PILL_W / 2;
-      const pillTop = pillY;
+      const pLeft = colCenterX - PILL_W / 2;
+      const pTop = pillTop;
 
-      // Clip path for the pill group
-      const clipRect = new fabric.Rect({
-        width: PILL_W * ds,
-        height: (PILL_H + PILL_BORDER_H) * ds,
-        rx: PILL_R * ds,
-        ry: PILL_R * ds,
-        originX: 'center',
-        originY: 'center',
-      });
-
-      // Pill background
-      const pillBg = new fabric.Rect({
-        left: 0, top: 0,
+      // Clip path in absolute canvas coords
+      const makeClip = () => new fabric.Rect({
+        left: s(pLeft), top: s(pTop),
         width: s(PILL_W), height: s(PILL_H),
         rx: s(PILL_R), ry: s(PILL_R),
-        fill: team.primaryColor + 'EB',
         originX: 'left', originY: 'top',
+        absolutePositioned: true,
       });
 
-      // Border extrude at bottom
-      const borderRect = new fabric.Rect({
-        left: 0, top: s(PILL_H),
-        width: s(PILL_W), height: s(PILL_BORDER_H),
+      // Bottom layer: full pill in BORDER color (peeks through at bottom as the border)
+      add(new fabric.Rect({
+        left: s(pLeft), top: s(pTop),
+        width: s(PILL_W), height: s(PILL_H),
+        rx: s(PILL_R), ry: s(PILL_R),
         fill: team.borderColor + 'E6',
-        originX: 'left', originY: 'top',
-      });
+      }));
 
-      // Team badge as watermark inside pill
+      // Top layer: slightly shorter pill in MAIN color, same rounded corners
+      add(new fabric.Rect({
+        left: s(pLeft), top: s(pTop),
+        width: s(PILL_W), height: s(PILL_H - PILL_BORDER_H),
+        rx: s(PILL_R), ry: s(PILL_R),
+        fill: team.primaryColor + 'EB',
+      }));
+
+      // Team badge as watermark inside pill (clipped to pill shape)
       const badgeImg = await loadImageCached('/badges/' + team.badge);
       if (buildIdRef.current !== id) return;
 
-      const groupObjects: fabric.Object[] = [pillBg, borderRect];
-
       if (badgeImg) {
-        const badgeTargetW = isHome ? 358 : 272;
-        const badgeScale = (badgeTargetW / Math.max(badgeImg.width!, badgeImg.height!)) * ds;
+        // Center badge in pill content area (above border), scaled to ~2x for watermark effect
+        const contentH = PILL_H - PILL_BORDER_H;
+        const badgeTargetH = contentH * 2;
+        const badgeScale = (badgeTargetH / badgeImg.height!) * ds;
+        const scaledW = badgeImg.width! * badgeScale;
+        const scaledH = badgeImg.height! * badgeScale;
+        // Clip to content area only (excludes border)
+        const contentClip = new fabric.Rect({
+          left: s(pLeft), top: s(pTop),
+          width: s(PILL_W), height: s(contentH),
+          rx: s(PILL_R), ry: s(PILL_R),
+          originX: 'left', originY: 'top',
+          absolutePositioned: true,
+        });
         badgeImg.set({
           scaleX: badgeScale, scaleY: badgeScale,
-          left: s(PILL_W / 2) - (badgeImg.width! * badgeScale) / 2,
-          top: s((PILL_H + PILL_BORDER_H) / 2) - (badgeImg.height! * badgeScale) / 2,
+          left: s(pLeft + PILL_W / 2) - scaledW / 2,
+          top: s(pTop + contentH / 2) - scaledH / 2,
           opacity: 0.15,
-          originX: 'left', originY: 'top',
+          clipPath: contentClip,
         });
-        groupObjects.push(badgeImg);
+        add(badgeImg);
       }
 
-      // Text: "ABR 52%"
-      const pillText = new fabric.FabricText(`${abbr}  ${odds}%`, {
+      // Pill text centered in pill, clipped
+      const pillText = new fabric.FabricText(`${abbr} ${odds}%`, {
         fontSize: s(PILL_FONT_SIZE),
-        fontFamily: 'Geist, sans-serif',
-        fontWeight: '600',
+        fontFamily: 'Geist-SemiBold',
         fill: '#FFFFFF',
         originX: 'center', originY: 'center',
-        left: s(PILL_W / 2),
-        top: s((PILL_H) / 2),
+        left: s(pLeft + PILL_W / 2),
+        top: s(pTop + PILL_H / 2),
+        clipPath: makeClip(),
+        selectable: false, evented: false,
       });
-      groupObjects.push(pillText);
-
-      const group = new fabric.Group(groupObjects, {
-        left: s(pillLeft),
-        top: s(pillTop),
-        clipPath: clipRect,
-        selectable: false,
-        evented: false,
-        originX: 'left',
-        originY: 'top',
-      });
-      c.add(group);
+      c.add(pillText);
     };
 
-    await buildPill(f.homeTeam, homeTeam?.name || f.homeTeam, f.homeOdds, homeColCenterX, true);
+    await buildPill(f.homeTeam, homeTeam?.name || f.homeTeam, f.homeOdds, homeColCX, true);
     if (buildIdRef.current !== id) return;
-    await buildPill(f.awayTeam, awayTeam?.name || f.awayTeam, f.awayOdds, awayColCenterX, false);
+    await buildPill(f.awayTeam, awayTeam?.name || f.awayTeam, f.awayOdds, awayColCX, false);
     if (buildIdRef.current !== id) return;
 
-    // 7. Pred icon — centered between pills (same vertical as pills)
-    const predIconX = CW / 2 - PRED_ICON_W / 2;
-    const predIconY = pillY + (PILL_H + PILL_BORDER_H - PRED_ICON_H) / 2;
+    // 7. Pred icon — center column, rendered as clipped group (like pills)
+    {
+      const piLeft = centerColCX - PRED_ICON_W / 2;
+      const piTop = predIconTop;
 
-    // Dark rounded square background
-    add(new fabric.Rect({
-      left: s(predIconX), top: s(predIconY),
-      width: s(PRED_ICON_W), height: s(PRED_ICON_H),
-      rx: s(PRED_ICON_R), ry: s(PRED_ICON_R),
-      fill: 'rgba(13,13,13,0.85)',
-    }));
+      // Bottom layer: full rounded rect in YELLOW (border color), inset ~1% so it hides behind dark rect
+      const inset = PRED_ICON_W * 0.01;
+      add(new fabric.Rect({
+        left: s(piLeft + inset), top: s(piTop + 2),
+        width: s(PRED_ICON_W - inset * 2), height: s(PRED_ICON_H - 2),
+        rx: s(PRED_ICON_R), ry: s(PRED_ICON_R),
+        fill: '#EBF132',
+      }));
 
-    // Pred mark inside
-    try {
-      const mark = await fabric.FabricImage.fromURL('/logos/mark-white.svg');
-      if (buildIdRef.current !== id) return;
-      const markPad = 28;
-      const markTargetW = PRED_ICON_W - markPad * 2;
-      const markScale = (markTargetW / mark.width!) * ds;
-      mark.set({
-        scaleX: markScale, scaleY: markScale,
-        left: s(predIconX + markPad),
-        top: s(predIconY + (PRED_ICON_H - mark.height! * (markTargetW / mark.width!)) / 2),
-      });
-      add(mark);
-    } catch { /* optional */ }
+      // Top layer: shorter dark rect, border color visible at bottom
+      add(new fabric.Rect({
+        left: s(piLeft), top: s(piTop),
+        width: s(PRED_ICON_W), height: s(PRED_ICON_H - PRED_ICON_BORDER_H),
+        rx: s(PRED_ICON_R), ry: s(PRED_ICON_R),
+        fill: '#1D1D1D',
+      }));
+
+      // Pred mark inside (centered in the dark area)
+      try {
+        const mark = await fabric.FabricImage.fromURL('/logos/mark-white.svg');
+        if (buildIdRef.current !== id) return;
+        const markTargetW = 84;
+        const markScale = (markTargetW / mark.width!) * ds;
+        const iconContentH = PRED_ICON_H - PRED_ICON_BORDER_H;
+        mark.set({
+          scaleX: markScale, scaleY: markScale,
+          left: s(piLeft + PRED_ICON_W / 2) - (mark.width! * markScale) / 2,
+          top: s(piTop + iconContentH / 2) - (mark.height! * markScale) / 2,
+        });
+        add(mark);
+      } catch { /* optional */ }
+    }
 
     c.requestRenderAll();
   }, []);
@@ -452,7 +518,7 @@ const HalftimeScoreCanvas = forwardRef<HalftimeScoreCanvasHandle, {
     (async () => {
       if (bgRef.current) { c.remove(bgRef.current); bgRef.current = null; }
 
-      const url = imageDataUrl || '/mock/halftime-default.jpg';
+      const url = imageDataUrl || '/images/halftime-default-bg.jpg';
 
       zoomRef.current = 1;
       let img: fabric.FabricImage;

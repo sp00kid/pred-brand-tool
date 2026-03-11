@@ -84,13 +84,13 @@ function getTeamAbbr(teamId: string, teamName: string): string {
     'astonvilla': 'AVL', 'westham': 'WHU', 'crystalpalace': 'CRY', 'nottmforest': 'NFO',
     'bournemouth': 'BOU', 'fulham': 'FUL', 'wolves': 'WOL', 'brentford': 'BRE',
     'everton': 'EVE', 'leicester': 'LEI', 'southampton': 'SOU', 'ipswich': 'IPS',
-    'barcelona': 'BAR', 'real-madrid': 'RMA', 'atletico': 'ATM', 'betis': 'BET',
+    'barcelona': 'BAR', 'realmadrid': 'RMA', 'atletico': 'ATM', 'betis': 'BET',
     'villarreal': 'VIL', 'realsociedad': 'RSO', 'sevilla': 'SEV', 'athletic': 'ATH',
     'athleticbilbao': 'ATH', 'valencia': 'VAL', 'celtavigo': 'CEL',
-    'bayern': 'BAY', 'dortmund': 'BVB', 'leverkusen': 'LEV', 'leipzig': 'RBL',
+    'bayernmunich': 'BAY', 'dortmund': 'BVB', 'leverkusen': 'LEV', 'rbleipzig': 'RBL',
     'psg': 'PSG', 'marseille': 'MAR', 'lyon': 'LYO', 'monaco': 'MON',
-    'juventus': 'JUV', 'acmilan': 'MIL', 'inter': 'INT', 'napoli': 'NAP', 'roma': 'ROM',
-    'benfica': 'BEN', 'porto': 'POR', 'sporting': 'SCP',
+    'juventus': 'JUV', 'acmilan': 'MIL', 'intermilan': 'INT', 'napoli': 'NAP', 'roma': 'ROM',
+    'benfica': 'BEN', 'porto': 'POR', 'sportingcp': 'SCP',
     'galatasaray': 'GAL', 'fenerbahce': 'FEN', 'besiktas': 'BJK',
     'ajax': 'AJA', 'psv': 'PSV', 'feyenoord': 'FEY',
     'celtic': 'CEL', 'rangers': 'RAN',
@@ -279,8 +279,8 @@ const HalftimeScoreCanvas = forwardRef<HalftimeScoreCanvasHandle, {
     }));
     statusText.set({ originX: 'right' });
 
-    // 4. Score numbers — vertically centered area
-    const scoreCenterY = CH / 2 - 40; // nudge up to leave room for pills below
+    // 4. Score numbers — positioned in lower portion of canvas (matching Paper design)
+    const scoreCenterY = CH * 0.62;
 
     // Home score — left column
     addCX(new fabric.FabricText(f.homeScore, {
@@ -413,9 +413,9 @@ const HalftimeScoreCanvas = forwardRef<HalftimeScoreCanvasHandle, {
     await buildPill(f.awayTeam, awayTeam?.name || f.awayTeam, f.awayOdds, awayColCenterX, false);
     if (buildIdRef.current !== id) return;
 
-    // 7. Pred icon — center bottom
+    // 7. Pred icon — centered between pills (same vertical as pills)
     const predIconX = CW / 2 - PRED_ICON_W / 2;
-    const predIconY = CH - PRED_ICON_H - 50;
+    const predIconY = pillY + (PILL_H + PILL_BORDER_H - PRED_ICON_H) / 2;
 
     // Dark rounded square background
     add(new fabric.Rect({

@@ -52,7 +52,7 @@ export default function Editor() {
   const [halftimeImageDataUrl, setHalftimeImageDataUrl] = useState<string | null>('/mock/halftime-default.jpg');
   const [halftimeImageInfo, setHalftimeImageInfo] = useState<ImageInfo | null>(null);
   const [halftimeFields, setHalftimeFields] = useState<HalftimeScoreFields>({
-    homeTeam: 'real-madrid',
+    homeTeam: 'realmadrid',
     awayTeam: 'barcelona',
     homeScore: '0',
     awayScore: '2',

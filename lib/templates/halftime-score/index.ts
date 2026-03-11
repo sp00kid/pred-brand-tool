@@ -27,7 +27,7 @@ export const halftimeScoreTemplate: TemplateDefinition = {
     { id: 'league', label: 'League', type: 'select', group: 'Match Info' },
   ],
   defaultValues: {
-    homeTeam: 'real-madrid',
+    homeTeam: 'realmadrid',
     awayTeam: 'barcelona',
     homeScore: '0',
     awayScore: '2',

@@ -139,6 +139,14 @@ export const leagues: League[] = [
     ],
   },
   {
+    id: 'championship',
+    name: 'Championship',
+    teams: [
+      { id: 'burnley', name: 'Burnley', badge: 'burnley.png', primaryColor: '#6C1D45', borderColor: '#3A0F24' },
+      { id: 'sunderland', name: 'Sunderland', badge: 'sunderland.png', primaryColor: '#EB172B', borderColor: '#7A0B15' },
+    ],
+  },
+  {
     id: 'eliteserien',
     name: 'Eliteserien',
     teams: [

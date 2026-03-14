@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { MAX_MATCHES } from '@/lib/templates/soccer-fixtures/index';
 
 const TEAM_LIST = `
 Premier League: arsenal (Arsenal), astonvilla (Aston Villa), bournemouth (Bournemouth), brentford (Brentford), brighton (Brighton), chelsea (Chelsea), crystalpalace (Crystal Palace), everton (Everton), fulham (Fulham), ipswich (Ipswich Town), leicester (Leicester City), liverpool (Liverpool), mancity (Man City), manutd (Man United), newcastle (Newcastle), nottmforest (Nott'm Forest), southampton (Southampton), tottenham (Tottenham), westham (West Ham), wolves (Wolves)
@@ -10,6 +11,7 @@ Eredivisie: ajax (Ajax), feyenoord (Feyenoord), psv (PSV)
 Liga Portugal: benfica (Benfica), porto (FC Porto), sportingcp (Sporting CP)
 Scottish Premiership: celtic (Celtic), rangers (Rangers)
 Süper Lig: besiktas (Beşiktaş), fenerbahce (Fenerbahçe), galatasaray (Galatasaray)
+Championship: burnley (Burnley), sunderland (Sunderland)
 Eliteserien: bodoglimt (Bodø/Glimt)
 Other European: clubbrugge (Club Brugge), dinamozagreb (Dinamo Zagreb), redstarbelgrade (Red Star Belgrade), salzburg (Red Bull Salzburg), shakhtardonetsk (Shakhtar Donetsk), slovanbratislava (Slovan Bratislava), spartaprague (Sparta Prague), sturmgraz (Sturm Graz), youngboys (Young Boys)
 `.trim();
@@ -25,7 +27,7 @@ Rules:
 - If the user mentions a title (e.g. "UCL", "Champions League", "Premier League matchday"), extract it as title.
 - If the user mentions a date (e.g. "Wednesday March 12", "tomorrow"), extract it as date.
 - If the user mentions a timezone (e.g. "CET", "GMT", "ET"), extract it as timezone.
-- Maximum 12 matches. If more are given, take the first 12.
+- Maximum ${MAX_MATCHES} matches. If more are given, take the first ${MAX_MATCHES}.
 - Only include fields you can confidently extract. Omit title/date/timezone if not mentioned.
 - If a team name doesn't match any known team, use empty string for that team ID.
 
@@ -56,7 +58,7 @@ const RESPONSE_SCHEMA = {
           required: ['homeTeam', 'awayTeam', 'time'],
           additionalProperties: false,
         },
-        maxItems: 12,
+        maxItems: MAX_MATCHES,
       },
     },
     required: ['matches'],

@@ -237,6 +237,31 @@ export default function Editor() {
     };
   }, []);
 
+  // Paste image from clipboard
+  useEffect(() => {
+    const handler = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result === 'string') {
+              handleImageUpload(reader.result, file);
+            }
+          };
+          reader.readAsDataURL(file);
+          return;
+        }
+      }
+    };
+    document.addEventListener('paste', handler);
+    return () => document.removeEventListener('paste', handler);
+  }, [handleImageUpload]);
+
   return (
     <div className="flex h-screen">
       {/* Main content area */}

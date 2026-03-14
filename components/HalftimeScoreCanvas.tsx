@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useSta
 import * as fabric from 'fabric';
 import { getTeamById } from '@/lib/templates/soccer-fixtures/teams';
 import { getLeagueById } from '@/lib/templates/halftime-score/leagues';
+import { applyBgBlur } from '@/lib/fabricUtils';
 
 export interface HalftimeScoreFields {
   homeTeam: string;
@@ -549,6 +550,7 @@ const HalftimeScoreCanvas = forwardRef<HalftimeScoreCanvasHandle, {
 
       c.insertAt(0, img);
       bgRef.current = img;
+      applyBgBlur(img, c, bgBlur);
 
       if (fontsReady) buildOverlays();
       onZoomChange?.(1);
@@ -563,18 +565,12 @@ const HalftimeScoreCanvas = forwardRef<HalftimeScoreCanvasHandle, {
     buildOverlays();
   }, [fields, fontsReady, buildOverlays]);
 
-  // Apply blur filter to background image
+  // Apply blur filter to background image (debounced to avoid full-res filter on every slider tick)
   useEffect(() => {
-    const bg = bgRef.current;
-    const c = fabricRef.current;
-    if (!bg || !c) return;
-    if (bgBlur > 0) {
-      bg.filters = [new fabric.filters.Blur({ blur: bgBlur / 100 })];
-    } else {
-      bg.filters = [];
-    }
-    bg.applyFilters();
-    c.requestRenderAll();
+    const timer = setTimeout(() => {
+      applyBgBlur(bgRef.current, fabricRef.current, bgBlur);
+    }, 30);
+    return () => clearTimeout(timer);
   }, [bgBlur]);
 
   // Resize canvas + rebuild

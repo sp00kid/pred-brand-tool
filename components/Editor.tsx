@@ -11,6 +11,7 @@ import ConstraintPanel from './ConstraintPanel';
 import ExportButton from './ExportButton';
 import CropSelector from './CropSelector';
 import TwitterPreview from './TwitterPreview';
+import BgBlurSlider from './BgBlurSlider';
 import MarketBannerSidebar from '@/lib/templates/market-banner/Sidebar';
 import SoccerFixturesSidebar from '@/lib/templates/soccer-fixtures/Sidebar';
 import HalftimeScoreSidebar, { type HalftimeScoreFields } from '@/lib/templates/halftime-score/Sidebar';
@@ -62,8 +63,9 @@ export default function Editor() {
     league: 'la-liga',
   });
 
-  // Background blur
-  const [bgBlur, setBgBlur] = useState(0);
+  // Background blur (per-template so switching preserves values)
+  const [fixturesBgBlur, setFixturesBgBlur] = useState(0);
+  const [halftimeBgBlur, setHalftimeBgBlur] = useState(0);
 
   // Shared state
   const [showToast, setShowToast] = useState(false);
@@ -225,7 +227,6 @@ export default function Editor() {
     }
     setActiveTemplate(templateId);
     setZoomLevel(1);
-    setBgBlur(0);
     setActiveTab('editor');
     setPreviewDataUrl(null);
   }, [imageDataUrl, bannerImageDataUrl, fixturesImageDataUrl]);
@@ -312,7 +313,7 @@ export default function Editor() {
               ref={fixturesCanvasRef}
               fields={fixturesFields}
               imageDataUrl={fixturesImageDataUrl}
-              bgBlur={bgBlur}
+              bgBlur={fixturesBgBlur}
               onZoomChange={setZoomLevel}
               onCanvasUpdate={handleCanvasUpdate}
             />
@@ -323,7 +324,7 @@ export default function Editor() {
               ref={halftimeCanvasRef}
               fields={halftimeFields}
               imageDataUrl={halftimeImageDataUrl}
-              bgBlur={bgBlur}
+              bgBlur={halftimeBgBlur}
               onZoomChange={setZoomLevel}
               onCanvasUpdate={handleCanvasUpdate}
             />
@@ -471,22 +472,7 @@ export default function Editor() {
               imageInfo={fixturesImageInfo}
             />
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-white/50">
-                  BG Blur
-                </p>
-                <span className="text-[11px] text-white/40 tabular-nums">{bgBlur}%</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={bgBlur}
-                onChange={(e) => setBgBlur(Number(e.target.value))}
-                className="w-full accent-pred-yellow h-1"
-              />
-            </div>
+            <BgBlurSlider value={fixturesBgBlur} onChange={setFixturesBgBlur} />
 
             <div className="h-px bg-pred-border" />
 
@@ -503,22 +489,7 @@ export default function Editor() {
               imageInfo={halftimeImageInfo}
             />
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-white/50">
-                  BG Blur
-                </p>
-                <span className="text-[11px] text-white/40 tabular-nums">{bgBlur}%</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={bgBlur}
-                onChange={(e) => setBgBlur(Number(e.target.value))}
-                className="w-full accent-pred-yellow h-1"
-              />
-            </div>
+            <BgBlurSlider value={halftimeBgBlur} onChange={setHalftimeBgBlur} />
 
             <div className="h-px bg-pred-border" />
 

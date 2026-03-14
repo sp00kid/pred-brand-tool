@@ -29,7 +29,7 @@ export const soccerFixturesTemplate: TemplateDefinition = {
       label: 'Matches',
       type: 'repeater',
       min: 1,
-      max: 6,
+      max: 12,
       itemFields: [
         { id: 'homeTeam', label: 'Home', type: 'select' },
         { id: 'awayTeam', label: 'Away', type: 'select' },

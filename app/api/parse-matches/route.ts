@@ -25,7 +25,7 @@ Rules:
 - If the user mentions a title (e.g. "UCL", "Champions League", "Premier League matchday"), extract it as title.
 - If the user mentions a date (e.g. "Wednesday March 12", "tomorrow"), extract it as date.
 - If the user mentions a timezone (e.g. "CET", "GMT", "ET"), extract it as timezone.
-- Maximum 6 matches. If more are given, take the first 6.
+- Maximum 12 matches. If more are given, take the first 12.
 - Only include fields you can confidently extract. Omit title/date/timezone if not mentioned.
 - If a team name doesn't match any known team, use empty string for that team ID.
 
@@ -56,7 +56,7 @@ const RESPONSE_SCHEMA = {
           required: ['homeTeam', 'awayTeam', 'time'],
           additionalProperties: false,
         },
-        maxItems: 6,
+        maxItems: 12,
       },
     },
     required: ['matches'],

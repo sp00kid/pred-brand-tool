@@ -147,7 +147,7 @@ export default function SoccerFixturesSidebar({ fields, onChange }: SidebarProps
   };
 
   const addMatch = () => {
-    if (fields.matches.length >= 6) return;
+    if (fields.matches.length >= 12) return;
     onChange({
       ...fields,
       matches: [...fields.matches, { homeTeam: '', awayTeam: '', time: '3:00 PM' }],
@@ -200,8 +200,8 @@ export default function SoccerFixturesSidebar({ fields, onChange }: SidebarProps
       {/* Matches */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <SectionLabel>Matches ({fields.matches.length}/6)</SectionLabel>
-          {fields.matches.length < 6 && (
+          <SectionLabel>Matches ({fields.matches.length}/12)</SectionLabel>
+          {fields.matches.length < 12 && (
             <button
               onClick={addMatch}
               className="text-[11px] text-pred-yellow hover:text-pred-yellow/80 font-medium uppercase tracking-wider transition-colors"

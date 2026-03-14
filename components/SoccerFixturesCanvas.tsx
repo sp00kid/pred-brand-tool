@@ -32,7 +32,6 @@ const CH = 720;
 const GRID_LEFT = 44;
 const GRID_WIDTH = 1192;
 const COL_GAP = 20;
-const ROW_GAP = 12;
 
 // Footer
 const FOOTER_H = 56;
@@ -46,10 +45,13 @@ const ACCENT_LINE_H = 3;
 
 // Scaling rules per match-count tier
 function getScaleConfig(matchCount: number) {
-  if (matchCount <= 2) {
-    return { cardH: 200, badgeSize: 130, timeFontSize: 36, tzFontSize: 16, badgeContainerSize: 200 };
-  }
-  return { cardH: 140, badgeSize: 100, timeFontSize: 28, tzFontSize: 14, badgeContainerSize: 140 };
+  if (matchCount <= 2)
+    return { cols: 2, cardH: 200, badgeSize: 130, timeFontSize: 36, tzFontSize: 16, badgeContainerSize: 200, rowGap: 12 };
+  if (matchCount <= 6)
+    return { cols: 2, cardH: 140, badgeSize: 100, timeFontSize: 28, tzFontSize: 14, badgeContainerSize: 140, rowGap: 12 };
+  if (matchCount <= 9)
+    return { cols: 3, cardH: 140, badgeSize: 90, timeFontSize: 26, tzFontSize: 13, badgeContainerSize: 120, rowGap: 12 };
+  return { cols: 3, cardH: 110, badgeSize: 72, timeFontSize: 24, tzFontSize: 12, badgeContainerSize: 100, rowGap: 12 };
 }
 
 // Colors
@@ -241,7 +243,7 @@ const SoccerFixturesCanvas = forwardRef<SoccerFixturesCanvasHandle, {
     }));
 
     // 2. Title (Paper: top=32, centered)
-    const titleText = addCX(new fabric.FabricText(f.title.toUpperCase(), {
+    addCX(new fabric.FabricText(f.title.toUpperCase(), {
       left: s(CW / 2), top: s(HEADER_TITLE_Y),
       fontSize: s(64), fontFamily: 'Geist, sans-serif',
       fontWeight: '800', fontStyle: 'italic',
@@ -274,32 +276,35 @@ const SoccerFixturesCanvas = forwardRef<SoccerFixturesCanvasHandle, {
     const matches = f.matches;
     const matchCount = matches.length;
     const cfg = getScaleConfig(matchCount);
-    const rows = Math.ceil(matchCount / 2);
-    const gridH = rows * cfg.cardH + (rows - 1) * ROW_GAP;
+    const { cols } = cfg;
+    const rows = Math.ceil(matchCount / cols);
+    const gridH = rows * cfg.cardH + (rows - 1) * cfg.rowGap;
     const availableH = FOOTER_Y - headerBottom;
     const gridTop = headerBottom + (availableH - gridH) / 2;
 
-    const colW = (GRID_WIDTH - COL_GAP) / 2;
-    const oddLastCard = matchCount % 2 === 1;
+    const colW = (GRID_WIDTH - (cols - 1) * COL_GAP) / cols;
+    const lastRowCount = matchCount % cols || cols;
+    const lastRowStart = matchCount - lastRowCount;
+    const isLastRowIncomplete = lastRowCount < cols;
 
     for (let i = 0; i < matchCount; i++) {
       const match = matches[i];
-      const row = Math.floor(i / 2);
-      const col = i % 2;
-      const isLastOdd = oddLastCard && i === matchCount - 1;
+      const row = Math.floor(i / cols);
+      const col = i % cols;
 
       let cardX: number;
-      let cardW: number;
+      const cardW = colW;
 
-      if (isLastOdd) {
-        cardW = 586;
-        cardX = GRID_LEFT + (GRID_WIDTH - cardW) / 2;
+      if (isLastRowIncomplete && i >= lastRowStart) {
+        const lastRowCol = i - lastRowStart;
+        const totalLastRowW = lastRowCount * colW + (lastRowCount - 1) * COL_GAP;
+        const lastRowLeft = GRID_LEFT + (GRID_WIDTH - totalLastRowW) / 2;
+        cardX = lastRowLeft + lastRowCol * (colW + COL_GAP);
       } else {
-        cardW = colW;
         cardX = GRID_LEFT + col * (colW + COL_GAP);
       }
 
-      const cardY = gridTop + row * (cfg.cardH + ROW_GAP);
+      const cardY = gridTop + row * (cfg.cardH + cfg.rowGap);
       const bcSize = cfg.badgeContainerSize;
       const timeCellW = cardW - bcSize * 2;
 

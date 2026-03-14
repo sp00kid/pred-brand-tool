@@ -32,6 +32,7 @@ const CH = 720;
 const GRID_LEFT = 44;
 const GRID_WIDTH = 1192;
 const COL_GAP = 20;
+const ROW_GAP = 12;
 
 // Footer
 const FOOTER_H = 56;
@@ -46,12 +47,12 @@ const ACCENT_LINE_H = 3;
 // Scaling rules per match-count tier
 function getScaleConfig(matchCount: number) {
   if (matchCount <= 2)
-    return { cols: 2, cardH: 200, badgeSize: 130, timeFontSize: 36, tzFontSize: 16, badgeContainerSize: 200, rowGap: 12 };
+    return { cols: 2, cardH: 200, badgeSize: 130, timeFontSize: 36, tzFontSize: 16, badgeContainerSize: 200 };
   if (matchCount <= 6)
-    return { cols: 2, cardH: 140, badgeSize: 100, timeFontSize: 28, tzFontSize: 14, badgeContainerSize: 140, rowGap: 12 };
+    return { cols: 2, cardH: 140, badgeSize: 100, timeFontSize: 28, tzFontSize: 14, badgeContainerSize: 140 };
   if (matchCount <= 9)
-    return { cols: 3, cardH: 140, badgeSize: 90, timeFontSize: 26, tzFontSize: 13, badgeContainerSize: 120, rowGap: 12 };
-  return { cols: 3, cardH: 110, badgeSize: 72, timeFontSize: 24, tzFontSize: 12, badgeContainerSize: 100, rowGap: 12 };
+    return { cols: 3, cardH: 140, badgeSize: 90, timeFontSize: 26, tzFontSize: 13, badgeContainerSize: 120 };
+  return { cols: 3, cardH: 110, badgeSize: 72, timeFontSize: 24, tzFontSize: 12, badgeContainerSize: 100 };
 }
 
 // Colors
@@ -278,7 +279,7 @@ const SoccerFixturesCanvas = forwardRef<SoccerFixturesCanvasHandle, {
     const cfg = getScaleConfig(matchCount);
     const { cols } = cfg;
     const rows = Math.ceil(matchCount / cols);
-    const gridH = rows * cfg.cardH + (rows - 1) * cfg.rowGap;
+    const gridH = rows * cfg.cardH + (rows - 1) * ROW_GAP;
     const availableH = FOOTER_Y - headerBottom;
     const gridTop = headerBottom + (availableH - gridH) / 2;
 
@@ -286,6 +287,11 @@ const SoccerFixturesCanvas = forwardRef<SoccerFixturesCanvasHandle, {
     const lastRowCount = matchCount % cols || cols;
     const lastRowStart = matchCount - lastRowCount;
     const isLastRowIncomplete = lastRowCount < cols;
+    const lastRowLeft = isLastRowIncomplete
+      ? GRID_LEFT + (GRID_WIDTH - (lastRowCount * colW + (lastRowCount - 1) * COL_GAP)) / 2
+      : 0;
+
+    const cardGeometries: { cardX: number; cardY: number; cardW: number; bcSize: number }[] = [];
 
     for (let i = 0; i < matchCount; i++) {
       const match = matches[i];
@@ -296,15 +302,12 @@ const SoccerFixturesCanvas = forwardRef<SoccerFixturesCanvasHandle, {
       const cardW = colW;
 
       if (isLastRowIncomplete && i >= lastRowStart) {
-        const lastRowCol = i - lastRowStart;
-        const totalLastRowW = lastRowCount * colW + (lastRowCount - 1) * COL_GAP;
-        const lastRowLeft = GRID_LEFT + (GRID_WIDTH - totalLastRowW) / 2;
-        cardX = lastRowLeft + lastRowCol * (colW + COL_GAP);
+        cardX = lastRowLeft + (i - lastRowStart) * (colW + COL_GAP);
       } else {
         cardX = GRID_LEFT + col * (colW + COL_GAP);
       }
 
-      const cardY = gridTop + row * (cfg.cardH + cfg.rowGap);
+      const cardY = gridTop + row * (cfg.cardH + ROW_GAP);
       const bcSize = cfg.badgeContainerSize;
       const timeCellW = cardW - bcSize * 2;
 
@@ -351,11 +354,22 @@ const SoccerFixturesCanvas = forwardRef<SoccerFixturesCanvasHandle, {
         charSpacing: 80,
       }));
 
-      // Load and render badges
-      if (buildIdRef.current !== id) return;
+      // Store card geometry for badge placement after batch load
+      cardGeometries.push({ cardX, cardY, cardW, bcSize });
+    }
 
-      const homeBadge = await loadBadgeImage(match.homeTeam);
-      if (buildIdRef.current !== id) return;
+    // Batch-load all badges concurrently
+    const badgeImages = await Promise.all(
+      matches.flatMap(m => [loadBadgeImage(m.homeTeam), loadBadgeImage(m.awayTeam)])
+    );
+    if (buildIdRef.current !== id) return;
+
+    // Place badges using stored geometries
+    for (let i = 0; i < matchCount; i++) {
+      const { cardX, cardY, cardW, bcSize } = cardGeometries[i];
+      const homeBadge = badgeImages[i * 2];
+      const awayBadge = badgeImages[i * 2 + 1];
+
       if (homeBadge) {
         const badgeScale = (cfg.badgeSize / Math.max(homeBadge.width!, homeBadge.height!)) * ds;
         homeBadge.set({
@@ -366,8 +380,6 @@ const SoccerFixturesCanvas = forwardRef<SoccerFixturesCanvasHandle, {
         add(homeBadge);
       }
 
-      const awayBadge = await loadBadgeImage(match.awayTeam);
-      if (buildIdRef.current !== id) return;
       if (awayBadge) {
         const badgeScale = (cfg.badgeSize / Math.max(awayBadge.width!, awayBadge.height!)) * ds;
         awayBadge.set({
@@ -378,8 +390,6 @@ const SoccerFixturesCanvas = forwardRef<SoccerFixturesCanvasHandle, {
         add(awayBadge);
       }
     }
-
-    if (buildIdRef.current !== id) return;
 
     // 6. Footer — full-width top border, centered logo + divider + text (gap: 16px)
     const footerCenterY = FOOTER_Y + FOOTER_H / 2;

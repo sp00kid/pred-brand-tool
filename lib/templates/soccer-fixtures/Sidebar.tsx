@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { leagues } from './teams';
+import { MAX_MATCHES } from './index';
 import type { SoccerFixturesFields, MatchEntry } from '@/components/SoccerFixturesCanvas';
 
 interface SidebarProps {
@@ -147,7 +148,7 @@ export default function SoccerFixturesSidebar({ fields, onChange }: SidebarProps
   };
 
   const addMatch = () => {
-    if (fields.matches.length >= 12) return;
+    if (fields.matches.length >= MAX_MATCHES) return;
     onChange({
       ...fields,
       matches: [...fields.matches, { homeTeam: '', awayTeam: '', time: '3:00 PM' }],
@@ -200,8 +201,8 @@ export default function SoccerFixturesSidebar({ fields, onChange }: SidebarProps
       {/* Matches */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <SectionLabel>Matches ({fields.matches.length}/12)</SectionLabel>
-          {fields.matches.length < 12 && (
+          <SectionLabel>Matches ({fields.matches.length}/{MAX_MATCHES})</SectionLabel>
+          {fields.matches.length < MAX_MATCHES && (
             <button
               onClick={addMatch}
               className="text-[11px] text-pred-yellow hover:text-pred-yellow/80 font-medium uppercase tracking-wider transition-colors"

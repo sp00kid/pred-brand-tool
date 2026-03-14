@@ -1,5 +1,7 @@
 import type { TemplateDefinition } from '../types';
 
+export const MAX_MATCHES = 12;
+
 export const soccerFixturesTemplate: TemplateDefinition = {
   id: 'soccer-fixtures',
   name: 'Soccer Fixtures',
@@ -29,7 +31,7 @@ export const soccerFixturesTemplate: TemplateDefinition = {
       label: 'Matches',
       type: 'repeater',
       min: 1,
-      max: 12,
+      max: MAX_MATCHES,
       itemFields: [
         { id: 'homeTeam', label: 'Home', type: 'select' },
         { id: 'awayTeam', label: 'Away', type: 'select' },

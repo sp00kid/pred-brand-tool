@@ -62,6 +62,9 @@ export default function Editor() {
     league: 'la-liga',
   });
 
+  // Background blur
+  const [bgBlur, setBgBlur] = useState(0);
+
   // Shared state
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -222,6 +225,7 @@ export default function Editor() {
     }
     setActiveTemplate(templateId);
     setZoomLevel(1);
+    setBgBlur(0);
     setActiveTab('editor');
     setPreviewDataUrl(null);
   }, [imageDataUrl, bannerImageDataUrl, fixturesImageDataUrl]);
@@ -308,6 +312,7 @@ export default function Editor() {
               ref={fixturesCanvasRef}
               fields={fixturesFields}
               imageDataUrl={fixturesImageDataUrl}
+              bgBlur={bgBlur}
               onZoomChange={setZoomLevel}
               onCanvasUpdate={handleCanvasUpdate}
             />
@@ -318,6 +323,7 @@ export default function Editor() {
               ref={halftimeCanvasRef}
               fields={halftimeFields}
               imageDataUrl={halftimeImageDataUrl}
+              bgBlur={bgBlur}
               onZoomChange={setZoomLevel}
               onCanvasUpdate={handleCanvasUpdate}
             />
@@ -465,6 +471,23 @@ export default function Editor() {
               imageInfo={fixturesImageInfo}
             />
 
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-white/50">
+                  BG Blur
+                </p>
+                <span className="text-[11px] text-white/40 tabular-nums">{bgBlur}%</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={bgBlur}
+                onChange={(e) => setBgBlur(Number(e.target.value))}
+                className="w-full accent-pred-yellow h-1"
+              />
+            </div>
+
             <div className="h-px bg-pred-border" />
 
             <SoccerFixturesSidebar
@@ -479,6 +502,23 @@ export default function Editor() {
               hasImage={!!halftimeImageDataUrl}
               imageInfo={halftimeImageInfo}
             />
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-white/50">
+                  BG Blur
+                </p>
+                <span className="text-[11px] text-white/40 tabular-nums">{bgBlur}%</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={bgBlur}
+                onChange={(e) => setBgBlur(Number(e.target.value))}
+                className="w-full accent-pred-yellow h-1"
+              />
+            </div>
 
             <div className="h-px bg-pred-border" />
 

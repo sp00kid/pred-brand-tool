@@ -105,9 +105,10 @@ function clampBg(img: fabric.FabricImage, cw: number, ch: number) {
 const SoccerFixturesCanvas = forwardRef<SoccerFixturesCanvasHandle, {
   fields: SoccerFixturesFields;
   imageDataUrl: string | null;
+  bgBlur?: number;
   onZoomChange?: (zoom: number) => void;
   onCanvasUpdate?: () => void;
-}>(function SoccerFixturesCanvas({ fields, imageDataUrl, onZoomChange, onCanvasUpdate }, ref) {
+}>(function SoccerFixturesCanvas({ fields, imageDataUrl, bgBlur = 0, onZoomChange, onCanvasUpdate }, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasElRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
@@ -500,6 +501,20 @@ const SoccerFixturesCanvas = forwardRef<SoccerFixturesCanvasHandle, {
     if (!fabricRef.current || !fontsReady) return;
     buildOverlays();
   }, [fields, fontsReady, buildOverlays]);
+
+  // Apply blur filter to background image
+  useEffect(() => {
+    const bg = bgRef.current;
+    const c = fabricRef.current;
+    if (!bg || !c) return;
+    if (bgBlur > 0) {
+      bg.filters = [new fabric.filters.Blur({ blur: bgBlur / 100 })];
+    } else {
+      bg.filters = [];
+    }
+    bg.applyFilters();
+    c.requestRenderAll();
+  }, [bgBlur]);
 
   // Resize canvas + rebuild
   useEffect(() => {

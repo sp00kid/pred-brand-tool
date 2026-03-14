@@ -104,9 +104,10 @@ function getTeamAbbr(teamId: string, teamName: string): string {
 const HalftimeScoreCanvas = forwardRef<HalftimeScoreCanvasHandle, {
   fields: HalftimeScoreFields;
   imageDataUrl: string | null;
+  bgBlur?: number;
   onZoomChange?: (zoom: number) => void;
   onCanvasUpdate?: () => void;
-}>(function HalftimeScoreCanvas({ fields, imageDataUrl, onZoomChange, onCanvasUpdate }, ref) {
+}>(function HalftimeScoreCanvas({ fields, imageDataUrl, bgBlur = 0, onZoomChange, onCanvasUpdate }, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasElRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
@@ -561,6 +562,20 @@ const HalftimeScoreCanvas = forwardRef<HalftimeScoreCanvasHandle, {
     if (!fabricRef.current || !fontsReady) return;
     buildOverlays();
   }, [fields, fontsReady, buildOverlays]);
+
+  // Apply blur filter to background image
+  useEffect(() => {
+    const bg = bgRef.current;
+    const c = fabricRef.current;
+    if (!bg || !c) return;
+    if (bgBlur > 0) {
+      bg.filters = [new fabric.filters.Blur({ blur: bgBlur / 100 })];
+    } else {
+      bg.filters = [];
+    }
+    bg.applyFilters();
+    c.requestRenderAll();
+  }, [bgBlur]);
 
   // Resize canvas + rebuild
   useEffect(() => {
